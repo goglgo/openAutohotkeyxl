@@ -3,7 +3,11 @@
 ; xl := new XlsxLib()
 ; xl.open("aaaa.xlsx")
 ; sleep,2000`
+doc := LoadXML("sheet1.xml")
 
+res:= ""
+res := findNode(doc.childNodes, nodename:="sheetData")
+Msgbox,% res
 
 return
 
@@ -11,6 +15,8 @@ GetSheetNameTest:
     GetSheetNames("app.xml")
     file.close()
 return
+
+
 
 
 ; 새 시트 작성시 바꿔야 할 것
@@ -27,12 +33,14 @@ class XlsxLib
 {
     __New()
     {
+        ; clear unzipped files in temp folder
         this.Initialize()
         OnExit(ObjBindMethod(this, "ClearTempFolder"))
     }
 
     Open(ExcelFilePath:="")
     {
+        ; Unzip Excel file to Temp folder for treating.
         this.xlsxPath := excelFilePath
         this.CheckValidation()
 
@@ -44,8 +52,8 @@ class XlsxLib
         this.xmlBase := this.destPath
         this.UnZipXlsx()
 
+        ; Load paths class
         this.paths := new this.PathInfo(this.destPath)
-        Msgbox,% this.paths.sheetsPath[0]
 
     }
 
@@ -77,15 +85,27 @@ class XlsxLib
 
     ZipXlsx()
     {
+        ; it just for save func.
 
     }
     LoadXML(xml_path)
     {
+        doc := ComObjCreate("MSXML2.DOMDocument.3.0")
+        doc.async := false
+        doc.Load(xml_path)
 
+        Err := doc.parseError
+        if Err.reason
+        {
+            msgbox % "Error: " Err.reason
+            ExitApp
+        }
+    return doc
     }
 
     ClearTempFolder()
     {
+        ; Clear Temp folder function when exiting app.
         FileRemoveDir, % this.destPath, 1
     }
 
@@ -101,7 +121,6 @@ class XlsxLib
             {
                 this.sheetsPath.Push(this.workSheetPath . "\" . A_LoopFileName)
             }
-            
         }
 
         app
@@ -145,24 +164,7 @@ class XlsxLib
 
 }
 
-LoadXML(xml_path)
-{
-    doc := ComObjCreate("MSXML2.DOMDocument.6.0")
-    doc.async := false
-    doc.Load(xml_path)
 
-    Err := doc.parseError
-    if Err.reason
-    {
-        msgbox % "Error: " Err.reason
-        ExitApp
-    }
-
-    ; doc.setProperty("SelectionLanguage", "XPath")
-    ; doc.setProperty("SelectionNamespaces","xmlns:vt='http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes'")
-
-return doc
-}
 
 GetSheetNames(xml)
 {
@@ -220,4 +222,53 @@ UnzipToTemp(TargetFile)
 
     FileMove, %TargetZipPath%, %TargetPath%
     ; PowerShell.exe -NoExit -Command Expand-Archive -LiteralPath 'C:\Users\goglk\Desktop\AutohotkeyXlsx\aaaa.xlsx' -DestinationPath 'C:\Temp\aaa\'
+}
+
+
+LoadXML(xml_path)
+{
+    doc := ComObjCreate("MSXML2.DOMDocument.3.0")
+    doc.async := false
+    doc.Load(xml_path)
+
+    Err := doc.parseError
+    if Err.reason
+    {
+        msgbox % "Error: " Err.reason
+        ExitApp
+    }
+return doc
+}
+
+
+class Sheets
+{
+    __New(sheetXML:="", sharedXML:="")
+    {
+
+    }
+}
+
+findNode(xmlnodes, nodename:="")
+{
+    for k, v in xmlnodes
+    {
+        if k.nodeName = nodename
+        {
+            Msgbox, % k.xml
+
+            return k
+        }
+        
+        
+        if k.hasChildNodes()
+        {
+            result := findNode(k.childNodes, nodename)
+            if result
+                return result
+            ; Msgbox,% k.nodeName . "<>" . nodename
+        }
+            
+    }
+    
 }

@@ -1,10 +1,8 @@
-﻿; Msgbox,% A_ScriptDir . "\ZipTestExtract\"
-; TargetFile := A_ScriptDir . "\aaaa.xlsx"
-targetXml := "workbook.xml"
+﻿targetXml := "workbook.xml"
 
 ; xl := new XlsxLib()
 ; xl.open("aaaa.xlsx")
-; sleep,2000
+; sleep,2000`
 
 
 return
@@ -16,7 +14,7 @@ return
 
 
 ; 새 시트 작성시 바꿔야 할 것
-; xl\worksheet\sheet[N].xml 추가
+; xl\worksheet\sheet[N].xml 추가(빈 시트 xml 따로 필요)
 ; xl\workbook.xml
 ;   SheetName 지정(안 겹치게), sheetID 하나 올려서 추가, r:id 올려서 추가
 ; docProps\app.xml

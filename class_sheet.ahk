@@ -1,6 +1,10 @@
-; tt := new Sheet("sheet1.xml", "sharedStrings.xml")
+tt := new Sheet("sheet1.xml", "sharedStrings.xml")
 ; Msgbox,% tt.range["B3"]
-; Return
+
+; tt.test()
+
+
+Return
 
 class Sheet
 {
@@ -14,12 +18,17 @@ class Sheet
         this.SetRange()
     }
 
+    test()
+    {
+        Msgbox,% this.sharedStringsXML.getElementsByTagName("si").length
+    }
+
     getSheetData()
     {
         doc := this.LoadXML(this.sheetXML)
         found := this.findNode(doc.childNodes, "sheetData")
         if not found
-            throw,"There is no found at the Sheet. getSheetData class."
+            throw,"There is no found at the Sheet. At the getSheetData method."
 
         return found
     }
@@ -30,8 +39,8 @@ class Sheet
         ; doc.getElementsByTagName("t")[0].text
 
         doc := this.LoadXML(this.sharedStringsXML)
-
-        tTags:= doc.getElementsByTagName("t") ; begin 0 (zero)
+        ; this.sharedStringsXML := doc
+        tTags:= doc.getElementsByTagName("t") 
 
         ; it has no __ENum. so rearrange.
         result := Array()
@@ -79,25 +88,71 @@ class Sheet
     SetRange()
     {
         this.Range := Array()
-
+        ; assigin _Range class for extending built-in Array class.
         this.Range.base := this._Range
-        this.Range.sheetDataDoc := this.sheetData
-        this.Range.SharedStrings := this.SharedStrings
+        
+        this.Range.sheetXML := this.sheetXML
+        ; this.Range.SharedStrings := this.SharedStrings
+        ; this.Range.sheetDataDoc := this.sheetData
+        ; this.Range.sharedStringsXML := this.sharedStringsXML
+
     }
 
     class _Range
     {
         __Get(rangeAddress)
         {
-            if not this.sheetDataDoc
+            Msgbox, %rangeAddress%
+            if Not this.sheetDataDoc
                 throw, "there is no sheetDataDoc."
-                    . " range() must use after sheet class is being initialized."
             return this.FindRange(rangeAddress)
         }
 
-        __Set(Key, Value)
+        __Set(rangeAddress, Value)
         {
 
+            ; TODO:object 세트시, recursion하는 문제가 발생함. 에러가 뜨는데, __Set을 마지막에 obj combine으로 묶어주면 어떨까
+            
+            ; If IsObject(Value)
+            ; {
+            ;     Msgbox,111111111111111
+            ; }
+            ; if this.FindRow(rageAddress)
+            ; {
+            ;     if Value is integer
+            ;     {
+
+            ;     }
+            ;     else
+            ;     {
+
+            ;     }
+            ; }
+            ; else
+            ; {
+
+            ; }
+        }
+
+        DeleteStringFromSharedStrings(Value)
+        {
+
+        }
+
+        FindRow(rangeAddress)
+        {
+            RegExMatch(test, "\d+$", rowNumber)
+            found := this.sheetDataDoc.getElementsByTagName("row")
+            
+            for k, v in found
+            {
+                if k.getAttribute("r") = rowNumber
+                {
+                    return k
+                }
+            }
+
+            return False
         }
 
         FindRange(rangeAddress)

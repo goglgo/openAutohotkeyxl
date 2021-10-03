@@ -8,6 +8,8 @@ xl.GetSheetBySheetName("TestSheet1")
 Msgbox,% xl.Range["B3"]
 
 
+
+
 return
 
 
@@ -60,10 +62,6 @@ class OpenAhkXl
         SplitPath, % this.xlsxPath, FileName, FileDir, ,FileNoExt
         If not FileDir
             this.xlsxPath := A_ScriptDir . "\" . this.xlsxPath
-
-        if this.pidListFromName(FileName)
-            throw, FileName . " 파일이 열려있는 중입니다. 확인해주세요."
-            
     }
 
     Initialize()
@@ -208,19 +206,6 @@ class OpenAhkXl
             }
         }
 
-    }
-
-    pidListFromName(name) {
-        static wmi := ComObjGet("winmgmts:\\.\root\cimv2")
-        
-        if (name == "")
-            return
-
-        PIDs := []
-        for Process in wmi.ExecQuery("SELECT * FROM Win32_Process WHERE Name = '" name "'")
-            PIDs.Push(Process.processId)
-
-        return PIDs 
     }
     
 

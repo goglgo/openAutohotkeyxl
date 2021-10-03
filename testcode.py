@@ -2,8 +2,8 @@ import win32com.client
 # xml = win32com.client.Dispatch("MSXML2.DOMDocument.6.0")
 xml = win32com.client.Dispatch("MSXML2.DOMDocument.3.0")
 
-# xml.load("sheet1.xml")
-xml.load("workbook.xml")
+xml.load("sheet1.xml")
+# xml.load("workbook.xml")
 # xml.setProperty("SelectionLanguage", "XPath")
 
 # 자동 로드 만들 수 있을 듯

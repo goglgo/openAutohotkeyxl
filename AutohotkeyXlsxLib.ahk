@@ -1,20 +1,17 @@
-﻿targetXml := "workbook.xml"
+﻿#Include class_sheet.ahk
 
-; xl := new XlsxLib()
-; xl.open("aaaa.xlsx")
-; sleep,2000`
-doc := LoadXML("sheet1.xml")
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+; xl.GetSheetBySheetNo(1).Range["B3"]
+xl.GetSheetBySheetName("TestSheet1")
 
-res:= ""
-res := findNode(doc.childNodes, nodename:="sheetData")
-Msgbox,% res
+Msgbox,% xl.Range["B3"]
+
+
+
 
 return
 
-GetSheetNameTest:
-    GetSheetNames("app.xml")
-    file.close()
-return
 
 
 
@@ -29,7 +26,7 @@ return
 ;   Variant > vt:i4 쪽 숫자도 하나 올림
 
 
-class XlsxLib
+class OpenAhkXl
 {
     __New()
     {
@@ -54,7 +51,7 @@ class XlsxLib
 
         ; Load paths class
         this.paths := new this.PathInfo(this.destPath)
-
+        this.GetSheetInfo()
     }
 
     CheckValidation()
@@ -75,8 +72,10 @@ class XlsxLib
     UnZipXlsx()
     {
         FileMove, % this.xlsxPath, % this.targetZipPath
+        
         Command := "PowerShell.exe -Command Expand-Archive -LiteralPath '"
             . this.targetZipPath . "' -DestinationPath '" . this.destPath . "'"
+                
         RunWait %Command%,, Hide
 
         FileMove, % this.targetZipPath , % this.xlsxPath
@@ -88,6 +87,7 @@ class XlsxLib
         ; it just for save func.
 
     }
+
     LoadXML(xml_path)
     {
         doc := ComObjCreate("MSXML2.DOMDocument.3.0")
@@ -107,6 +107,54 @@ class XlsxLib
     {
         ; Clear Temp folder function when exiting app.
         FileRemoveDir, % this.destPath, 1
+    }
+
+    IsSheetAlive()
+    {
+        if not this.paths.workbook
+            throw, "the paths are not initialized."
+
+    }
+
+    GetSheetInfo()
+    {
+        if not this.paths.workbook
+            throw, "the paths are not initialized."
+        doc := this.LoadXML(this.paths.workbook)
+        res := doc.getElementsByTagName("sheet")
+
+        this.sheetNameArray := Array()
+        this.sheetNoArray := Array()
+        
+        for k, v in res
+        {
+            name := k.getAttribute("name")
+            sheetNo := k.getAttribute("sheetId")
+            
+            this.sheetNameArray[name] := sheetNo
+            this.sheetNoArray.Push(sheetNo)
+        }
+    }
+
+    GetSheetBySheetName(sheetName)
+    {
+        if not this.sheetNameArray[sheetName]
+            throw, "Not initialized. Must open first."
+
+        sheetNo := this.sheetNameArray[sheetName]
+        sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
+        sheet := new Sheet(sheetPath, this.paths.sharedStrings)
+        this.Range := sheet.Range
+    }
+
+    GetSheetBySheetNo(sheetNo)
+    {   
+        if not this.sheetNoArray[sheetNo]
+            throw, "Not initialized. Must open first."
+        sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
+        sheet := new Sheet(sheetPath, this.paths.sharedStrings)
+        this.Range := sheet.Range
+        ; return sheet
     }
 
     ; xml Paths class
@@ -158,9 +206,8 @@ class XlsxLib
             }
         }
 
-        
-
     }
+    
 
 }
 
@@ -190,10 +237,6 @@ GetDisplayName(xmldata){
     Err := doc.parseError
     if Err.reason
         msgbox % "Error: " Err.reason
-
-    ; att_text := doc.selectSingleNode("//Properties").getAttributeNode("Application").text
-    ; docNode := doc.selectSingleNode("//Properties")
-    ; doc.SetProperty("SelectionLanguage","XPath")
 
     for k, v in tt
     {
@@ -241,14 +284,6 @@ return doc
 }
 
 
-class Sheets
-{
-    __New(sheetXML:="", sharedXML:="")
-    {
-
-    }
-}
-
 findNode(xmlnodes, nodename:="")
 {
     for k, v in xmlnodes
@@ -272,3 +307,5 @@ findNode(xmlnodes, nodename:="")
     }
     
 }
+
+

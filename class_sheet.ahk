@@ -1,6 +1,6 @@
-tt := new Sheet("sheet1.xml", "sharedStrings.xml")
-Msgbox,% tt.range["B3"]
-Return
+; tt := new Sheet("sheet1.xml", "sharedStrings.xml")
+; Msgbox,% tt.range["B3"]
+; Return
 
 class Sheet
 {

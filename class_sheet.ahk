@@ -1,18 +1,8 @@
+tt := new Sheet("sheet1.xml", "sharedStrings.xml")
+Msgbox,% tt.range["B3"]
+Return
 
-; tt := dictArray()
-; Array.ExtendDef(Extension)
-
-; A := []
-; MsgBox A.__Class ; Array
-; MsgBox A.HasMethod('Pop') ; true
-; MsgBox A.HasMethod('extensionMethod') ; true
-; MsgBox A.extensionProp ; 42
-
-; tt := new Sheets("sheet1.xml", "sharedStrings.xml")
-; Msgbox,% tt.range["C2"]
-; Return
-
-class Sheets
+class Sheet
 {
     __New(sheetXML:="", sharedStringsXML:="")
     {
@@ -90,55 +80,57 @@ class Sheets
     {
         this.Range := Array()
 
-        this.Range.base := _Range
+        this.Range.base := this._Range
         this.Range.sheetDataDoc := this.sheetData
         this.Range.SharedStrings := this.SharedStrings
     }
 
-}
-
-class _Range
-{
-    __Get(rangeAddress)
+    class _Range
     {
-        if not this.sheetDataDoc
-            throw, "there is no sheetDataDoc."
-                . " range() must use after sheet class is being initialized."
-        return this.FindRange(rangeAddress)
-    }
-
-    __Set(Key, Value)
-    {
-
-    }
-
-    FindRange(rangeAddress)
-    {
-        found := this.sheetDataDoc.getElementsByTagName("c")
-        for k,v in found
+        __Get(rangeAddress)
         {
-            ; Msgbox,% k.getAttribute("t")
-            if k.getAttribute("r") = rangeAddress
-            {
+            if not this.sheetDataDoc
+                throw, "there is no sheetDataDoc."
+                    . " range() must use after sheet class is being initialized."
+            return this.FindRange(rangeAddress)
+        }
 
-                if k.getAttribute("t") = "s"
-                {
-                    ; it saids string. need sharedStrings data.
-                    ; Msgbox,% k.text -1
-                    ; Msgbox,% this.SharedStrings[k.text -1]
-                    return this.SharedStrings[k.text].text
-                }
-                else
-                {
-                    return k.text
-                }
-
-            }
-
+        __Set(Key, Value)
+        {
 
         }
-        
+
+        FindRange(rangeAddress)
+        {
+            found := this.sheetDataDoc.getElementsByTagName("c")
+            for k,v in found
+            {
+                ; Msgbox,% k.getAttribute("t")
+                if k.getAttribute("r") = rangeAddress
+                {
+
+                    if k.getAttribute("t") = "s"
+                    {
+                        ; it saids string. need sharedStrings data.
+                        ; Msgbox,% k.text -1
+                        ; Msgbox,% this.SharedStrings[k.text -1]
+                        return this.SharedStrings[k.text+1].text
+                    }
+                    else
+                    {
+                        return k.text
+                    }
+
+                }
+            }
+            
+        }
     }
 }
+
+
+
+
+
 
 

@@ -1,25 +1,24 @@
-tt := new Sheet("sheet1.xml", "sharedStrings.xml")
+; tt := new Sheet("sheet1.xml", "sharedStrings.xml")
+; Msgbox,% tt.Range("B3").text
+; tt.Range("z5") := "tttt"
+; Return
 
-; MSGbox,% tt.Range("B3").text
-tt.Range("B3") := "11111"
-
-Return
-
-returnTrue()
-{
-    return "True"
-}
 
 class Sheet
 {
     __New(sheetXML:="", sharedStringsXML:="")
     {
+        if not FileExist(sheetXML)
+            throw, "Can't find sheet.xml file."
+
+        if not FileExist(sharedStringsXML)
+            throw, "Can't find sharedStrings.xml file."
+
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
 
         this.sheetData := this.getSheetData()
         this.SharedStrings := this.getSharedStrings()
-        this.SetRange()
     }
 
     getSheetData()
@@ -36,10 +35,9 @@ class Sheet
     getSharedStrings()
     {
         ; when get value
-        ; doc.getElementsByTagName("t")[0].text
 
         doc := this.LoadXML(this.sharedStringsXML)
-        ; this.sharedStringsXML := doc
+        this.sharedStringsDoc := doc
         tTags:= doc.getElementsByTagName("t") 
 
         ; it has no __ENum. so rearrange.
@@ -85,12 +83,6 @@ class Sheet
     return doc
     }
 
-    
-
-    SetRange()
-    {
-        ; this.Range := new _Range(["b3", "d3"])
-    }
 
     Range[params*]
     {
@@ -106,73 +98,181 @@ class Sheet
 
             ; TODO: make when multiple cells
         }
+
         set
         {
             if Not this.sheetData
                 throw, "there is no sheetDataDoc."
 
             ; fixed value var with assigning.
-            ; MSgbox,% value
-
             if params.length() = 1
-            {
-                ; um... so complicated.
-                ; how about to delete all and recreate all?
-                if found := this.FindRange(params[1], rangeOnly:=True)
-                {   
-                    ; Msgbox,% found.childNodes[0].text
-                    ; found.childNodes[0].text := 11111
-                    ; Msgbox,% found.childNodes[0].xml
-                    ; Msgbox,% this.sheetDataDoc.xml
-                    ; this.sheetDataDoc.save(this.sheetXML)
-
-                    if tAttValue := found.getAttribute("t")
-                    {
-                        if (tAttValue = "t") and (value is integer)
-                        {
-                            ; remove t attribute and remove element at the sharedStrings.xml
-                        }
-                        if (tAttValue = "t") and (value is not integer)
-                        {
-                            ; change sharedStrings value
-                        }
-                    }
-
-                    else
-                    {
-                        if value is integer
-                        {
-                            ; just change sheet value
-                        }
-                        else
-                        {
-                            ; change sheet attr 't' to 's' and add value to ...
-                        }
-                    }
-
-                }
-
-                else if this.FindRow(params[1])
-                {
-                    ; use existing row elem
-
-                }
-                else
-                {
-                    ; Create new Row Elem
-                }
-
+            {   
+                this.WriteCell(params[1], value)
             }
 
-            else{
+            else {
                 ; TODO: make when multiple cells
             }
         }
     }
 
+    WriteCell(range, value)
+    {
+        ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+        doc := this.sharedStringsDoc
+        StringUpper, range, range
+
+        chracterElementcheck := this.FindRange(range, rangeOnly:=True)
+
+        ; Find range at the sheetDataDoc
+        ; if exist found.
+        if chracterElementcheck
+        {
+            ; it from found element
+            chracterElement := chracterElementcheck
+            chracterElement.removeAttribute("t")
+        }
+        else
+        {
+            ; make new "c" elem
+            chracterElement := doc.createNode(1, "c", ns)
+            v := doc.createNode(1, "v", ns)
+            chracterElement.setAttribute("r", range)
+            chracterElement.appendChild(v)
+
+        }
+
+        if value is integer
+        {
+            ; check value whether integer or the other.
+            chracterElement.childNodes[0].text := value
+        }
+        else
+        {
+            ; when string or other(not checked other type yet.)
+            chracterElement.setAttribute("t", "s")
+
+            ; .createNode(Type, name, namespaceURI)
+            ; 1 : element
+            ; 2 : text
+            ; Type : https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms766473(v=vs.85)
+
+            
+            si := doc.createNode(1, "si", ns)
+            t := doc.createNode(1, "t", ns) ; text
+            phoneticPr := doc.createNode(1, "phoneticPr", ns) ; text sibling
+            phoneticPr.setAttribute("fontId", "1")
+            phoneticPr.setAttribute("type", "noConversion")
+
+            t.text := value
+            si.appendChild(t), si.appendChild(phoneticPr)
+
+            sst := doc.getElementsByTagName("sst")
+
+            ; sst has just one.
+            for k, v in sst
+                {
+                    count := k.getAttribute("count")
+                    k.setAttribute("count", count+1)
+                    k.appendChild(si)
+                }
+            
+            elemCount := doc.getElementsByTagName("t").length
+            chracterElement.childNodes[0].text := elemCount -1
+            Msgbox,% chracterElement.xml
+
+            if not chracterElementcheck
+            {
+                ; insert to row
+                ; if exist, just put there
+                ; else make new row, and adjust rowspan value
+                if foundRow := this.FindRow(range)
+                {
+                    foundRow.appendChild(chracterElement)
+                }
+                else
+                {   
+                    ; make row node
+                    RegExMatch(range, "\d+$", rowNumber)
+                    spans := this.RowSpanCheck()
+                    row := doc.createNode(1, "row", ns)
+                    row.setAttribute("spans", spans)
+                    row.setAttribute("r", rowNumber)
+                    row.setAttribute("x14ac:dyDescent", 0.3)
+                    ; row.setAttribute("xmlns:x14ac", ns2)
+                    row.appendChild(chracterElement)
+
+                    ; all row change the rowSpan value
+                    resRow := doc.getElementsByTagName("row")
+                    for k, v in resRow
+                    {
+                        row.setAttribute("spans", spans)
+                    }
+
+                    ; append row to sheetdata node
+                    resTag := this.sheetDataDoc.getElementsByTagName("sheetData")
+                    for k, v in resTag
+                    {
+                        k.appendchild(row)
+                    }
+
+                }
+            }
+            doc.save(this.sharedStringsXML)
+        }
+        this.sheetDataDoc.save(this.sheetXML)
+    }
+
+    RowSpanCheck()
+    {
+        columnNumberArray := Array()
+        found := this.sheetData.getElementsByTagName("c")
+        for k,v in found
+        {
+            columnNumberArray
+                .Push(this.RangeColumnToNumber(k.getAttribute("r")))
+        }
+        ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
+        return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)
+    }
+
+    RangeColumnToNumber(range)
+    {
+        StringUpper, range, range
+        RegExMatch(range, "[a-zA-Z]+", regexString)
+
+        columnNumber := 0
+        chars := Array()
+        Loop, parse, regexString
+        {   
+            chars.Push(A_LoopField)
+        }
+
+        if chars.length() >= 4 
+            throw, "too much column char"
+
+        if chars.Length() = 1
+            columnNumber += ord(chars[1]) - 64
+
+        if chars.Length() = 2
+            columnNumber := 26 + (ord(chars[2]) - 64) + 26*(ord(chars[1])-64-1)
+
+        if chars.Length() =3
+        {
+            ; very hard to figure out this formula.
+            columnNumber := 702 + (ord(chars[3]) - 64) 
+                + 26*(ord(chars[2]) - 64 - (ord(chars[1]) - 64)) 
+                + 702*(ord(chars[1]) - 64 - 1)
+        }
+        if columnNumber > 16384
+            throw, "too big column number for excel keeping."
+        return columnNumber
+    }
+
     FindRow(rangeAddress)
         {
-            RegExMatch(test, "\d+$", rowNumber)
+            RegExMatch(rangeAddress, "\d+$", rowNumber)
             found := this.sheetDataDoc.getElementsByTagName("row")
             
             for k, v in found
@@ -186,33 +286,33 @@ class Sheet
             return False
         }
 
-        FindRange(rangeAddress, rangeOnly:=False)
+    FindRange(rangeAddress, rangeOnly:=False)
+    {
+        found := this.sheetData.getElementsByTagName("c")
+        for k,v in found
         {
-            found := this.sheetData.getElementsByTagName("c")
-            for k,v in found
+
+            if k.getAttribute("r") = rangeAddress
             {
                 if rangeOnly
                     return k
 
-                if k.getAttribute("r") = rangeAddress
+                if k.getAttribute("t") = "s"
                 {
-
-                    if k.getAttribute("t") = "s"
-                    {
-                        ; it saids string. need sharedStrings data.
-                        ; Msgbox,% this.SharedStrings[k.text +1]
-                        temp := this.SharedStrings[k.text+1]
-                        return temp
-                    }
-                    else
-                    {
-                        return k
-                    }
-
+                    ; it saids string. need sharedStrings data.
+                    ; Msgbox,% this.SharedStrings[k.text +1]
+                    temp := this.SharedStrings[k.text+1]
+                    return temp
                 }
+                else
+                {
+                    return k
+                }
+
             }
-            
         }
+        
+    }
 
     SetRangeLegacy()
     {
@@ -247,7 +347,7 @@ class Sheet
 
         FindRow(rangeAddress)
         {
-            RegExMatch(test, "\d+$", rowNumber)
+            RegExMatch(rangeAddress, "\d+$", rowNumber)
             found := this.sheetDataDoc.getElementsByTagName("row")
             
             for k, v in found

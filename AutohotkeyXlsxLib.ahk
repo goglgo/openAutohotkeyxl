@@ -3,13 +3,16 @@
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 ; xl.GetSheetBySheetNo(1).Range["B3"]
-xl.GetSheetBySheetName("TestSheet1")
+sheet := xl.GetSheetBySheetName("TestSheet1")
 
-Msgbox,% xl.Range["B3"]
+Msgbox,% sheet.Range("B3").text
+sheet.Range("B3") := "asdfadsf"
+Msgbox,% sheet.Range("B3").text
+
+xl.save("Ttt.xlsx")
 
 
 return
-
 
 
 
@@ -61,7 +64,7 @@ class OpenAhkXl
         If not FileDir
             this.xlsxPath := A_ScriptDir . "\" . this.xlsxPath
 
-        if this.pidListFromName(FileName)
+        if this.pidListFromName(FileName).Length()
             throw, FileName . " 파일이 열려있는 중입니다. 확인해주세요."
             
     }
@@ -84,9 +87,30 @@ class OpenAhkXl
 
     }
 
-    ZipXlsx()
+    save(toSavePath:="")
     {
         ; it just for save func.
+        if not toSavePath
+            toSavePath := this.xlsxPath
+
+        SplitPath, % toSavePath, , FileDir, ,FileNoExt
+
+        SplitPath, % this.xlsxPath, , , ,xlsxFileNoExt
+
+        if not FileNoExt
+            FileNoExt := xlsxFileNoExt
+        if not FileDir
+            FileDir := A_ScriptDir
+
+        toSaveZipPath := FileDir . "\" . FileNoExt . ".zip"
+
+
+        Command := "PowerShell.exe Compress-Archive -Path "
+            . this.destPath . "/* -DestinationPath " . toSaveZipPath . " -Update"
+
+        Clipboard := Command
+        RunWait %Command%,, Hide
+        FileMove, % toSaveZipPath , % toSavePath, 1
 
     }
 
@@ -145,8 +169,8 @@ class OpenAhkXl
 
         sheetNo := this.sheetNameArray[sheetName]
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
-        sheet := new Sheet(sheetPath, this.paths.sharedStrings)
-        this.Range := sheet.Range
+        Sheet := new Sheet(sheetPath, this.paths.sharedStrings)
+        return Sheet
     }
 
     GetSheetBySheetNo(sheetNo)
@@ -155,8 +179,8 @@ class OpenAhkXl
             throw, "Not initialized. Must open first."
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         sheet := new Sheet(sheetPath, this.paths.sharedStrings)
-        this.Range := sheet.Range
-        ; return sheet
+        ; this.Range := sheet
+        return sheet
     }
 
     ; xml Paths class
@@ -219,7 +243,6 @@ class OpenAhkXl
         PIDs := []
         for Process in wmi.ExecQuery("SELECT * FROM Win32_Process WHERE Name = '" name "'")
             PIDs.Push(Process.processId)
-
         return PIDs 
     }
     

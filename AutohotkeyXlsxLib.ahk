@@ -2,11 +2,12 @@
 
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
-; xl.GetSheetBySheetNo(1).Range["B3"]
 sheet := xl.GetSheetBySheetName("TestSheet1")
 
 Msgbox,% sheet.Range("B3").text
 sheet.Range("B3") := "asdfadsf"
+sheet.Range("C10") := "asdfadsf"
+sheet.Range("D11") := "zzzzz"
 Msgbox,% sheet.Range("B3").text
 
 xl.save("Ttt.xlsx")
@@ -16,7 +17,7 @@ return
 
 
 
-
+; TODO:
 ; 새 시트 작성시 바꿔야 할 것
 ; xl\worksheet\sheet[N].xml 추가(빈 시트 xml 따로 필요)
 ; xl\workbook.xml
@@ -137,6 +138,7 @@ class OpenAhkXl
 
     IsSheetAlive()
     {
+        ; TODO set. returning is sheet available.
         if not this.paths.workbook
             throw, "the paths are not initialized."
 
@@ -249,101 +251,5 @@ class OpenAhkXl
 
 }
 
-
-
-GetSheetNames(xml)
-{
-    result_array := Array()
-
-    doc := LoadXML(xml)
-    child := doc.getElementsByTagName("vt:vector").item(1).childNodes
-
-    for v in child
-    {
-        result_array.push(v.text)
-    }
-
-return result_array
-}
-
-GetDisplayName(xmldata){
-
-    doc := ComObjCreate("MSXML2.DOMDocument.6.0")
-    doc.async := false
-    doc.loadXML(xmldata)
-
-    Err := doc.parseError
-    if Err.reason
-        msgbox % "Error: " Err.reason
-
-    for k, v in tt
-    {
-        Msgbox,% k.text . "<>" . v
-    }
-
-return att_text
-}
-
-ZipToTemp(Input_Folder)
-{
-    Output_Folder := "C:\Temp\aaa\"
-    RunWait PowerShell.exe Compress-Archive -Path '%Input_Folder%' -DestinationPath '%Output_Folder%' -Update ,, Hide
-}
-
-UnzipToTemp(TargetFile)
-{
-    SplitPath, TargetFile, FileName, FileDir,,FileNoExt
-    DestPath := "C:\Temp\NadureExcel\" . FileNoExt . "\"
-
-    TargetPath := TargetFile
-    TargetZipPath := FileDir . "\" . FileNoExt . ".zip"
-
-    FileMove, %TargetPath%, %TargetZipPath%
-    RunWait PowerShell.exe -Command Expand-Archive -LiteralPath '%TargetZipPath%' -DestinationPath '%DestPath%',, Hide
-
-    FileMove, %TargetZipPath%, %TargetPath%
-    ; PowerShell.exe -NoExit -Command Expand-Archive -LiteralPath 'C:\Users\goglk\Desktop\AutohotkeyXlsx\aaaa.xlsx' -DestinationPath 'C:\Temp\aaa\'
-}
-
-
-LoadXML(xml_path)
-{
-    doc := ComObjCreate("MSXML2.DOMDocument.3.0")
-    doc.async := false
-    doc.Load(xml_path)
-
-    Err := doc.parseError
-    if Err.reason
-    {
-        msgbox % "Error: " Err.reason
-        ExitApp
-    }
-return doc
-}
-
-
-findNode(xmlnodes, nodename:="")
-{
-    for k, v in xmlnodes
-    {
-        if k.nodeName = nodename
-        {
-            Msgbox, % k.xml
-
-            return k
-        }
-        
-        
-        if k.hasChildNodes()
-        {
-            result := findNode(k.childNodes, nodename)
-            if result
-                return result
-            ; Msgbox,% k.nodeName . "<>" . nodename
-        }
-            
-    }
-    
-}
 
 

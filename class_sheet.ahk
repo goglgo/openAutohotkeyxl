@@ -1,8 +1,9 @@
+; // test code for sheet class below.
 ; tt := new Sheet("sheet1.xml", "sharedStrings.xml")
 ; Msgbox,% tt.Range("B3").text
 ; tt.Range("z5") := "tttt"
 ; Return
-
+; //
 
 class Sheet
 {
@@ -17,36 +18,43 @@ class Sheet
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
 
-        this.sheetData := this.getSheetData()
-        this.SharedStrings := this.getSharedStrings()
+        ; this.sheetData := this.getSheetData()
+        ; this.SharedStrings := this.getSharedStrings()
     }
 
-    getSheetData()
+    sheetData
     {
-        doc := this.LoadXML(this.sheetXML)
-        this.sheetDataDoc := doc
-        found := this.findNode(doc.childNodes, "sheetData")
-        if not found
-            throw,"There is no found at the Sheet. At the getSheetData method."
-
-        return found
+        get
+        {
+            doc := this.LoadXML(this.sheetXML)
+            this.sheetDataDoc := doc
+            found := this.findNode(doc.childNodes, "sheetData")
+            if not found
+                throw,"There is no found at the Sheet. please check sheet.xml."
+            ; Msgbox,% found.xml
+            return found
+        }
     }
 
-    getSharedStrings()
+    SharedStrings
     {
-        ; when get value
+        get
+        {
+            doc := this.LoadXML(this.sharedStringsXML)
+            this.sharedStringsDoc := doc
+            tTags:= doc.getElementsByTagName("t") 
 
-        doc := this.LoadXML(this.sharedStringsXML)
-        this.sharedStringsDoc := doc
-        tTags:= doc.getElementsByTagName("t") 
-
-        ; it has no __ENum. so rearrange.
-        result := Array()
-        for k, v in tTags
-            result.Push(k)
-        return result 
+            ; it has no __ENum. so rearrange.
+            result := Array()
+            for k, v in tTags
+                result.Push(k)
+            return result 
+        }
     }
 
+    
+
+    
     findNode(xmlnodes, nodename:="")
     {
         for k, v in xmlnodes
@@ -116,6 +124,33 @@ class Sheet
         }
     }
 
+    LegacygetSheetData()
+    {
+        doc := this.LoadXML(this.sheetXML)
+        this.sheetDataDoc := doc
+        found := this.findNode(doc.childNodes, "sheetData")
+        if not found
+            throw,"There is no found at the Sheet. At the getSheetData method."
+
+        return found
+    }
+
+    LegacygetSharedStrings()
+    {
+        ; when get value
+
+        doc := this.LoadXML(this.sharedStringsXML)
+        this.sharedStringsDoc := doc
+        tTags:= doc.getElementsByTagName("t") 
+
+        ; it has no __ENum. so rearrange.
+        result := Array()
+        for k, v in tTags
+            result.Push(k)
+        return result 
+    }
+
+
     WriteCell(range, value)
     {
         ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -180,7 +215,6 @@ class Sheet
             
             elemCount := doc.getElementsByTagName("t").length
             chracterElement.childNodes[0].text := elemCount -1
-            Msgbox,% chracterElement.xml
 
             if not chracterElementcheck
             {
@@ -293,7 +327,7 @@ class Sheet
         {
 
             if k.getAttribute("r") = rangeAddress
-            {
+            {   
                 if rangeOnly
                     return k
 
@@ -301,8 +335,12 @@ class Sheet
                 {
                     ; it saids string. need sharedStrings data.
                     ; Msgbox,% this.SharedStrings[k.text +1]
-                    temp := this.SharedStrings[k.text+1]
-                    return temp
+                    ; Msgbox,% k.text+1
+                    ; temp := this.SharedStrings[k.text]
+                    ; for k, v in temp
+                    ;     Msgbox,% k . "<>" . v.text
+                    temp := this.SharedStrings
+                    return temp[k.text+1]
                 }
                 else
                 {
@@ -312,80 +350,6 @@ class Sheet
             }
         }
         
-    }
-
-    SetRangeLegacy()
-    {
-        this.Range := Array()
-        ; assigin _Range class for extending built-in Array class.
-        this.Range.base := this._Range
-        
-        this.Range.sheetXML := this.sheetXML
-        this.Range.SharedStrings := this.SharedStrings
-        this.Range.sheetDataDoc := this.sheetData
-        this.Range.sharedStringsXML := this.sharedStringsXML
-        this.Range.base.__Set := this._RangeMethodClass.__Set
-
-    }
-
-    
-
-    class _RangeLegacy
-    {
-        __Get(rangeAddress)
-        {
-            Msgbox, %rangeAddress%
-            if Not this.sheetDataDoc
-                throw, "there is no sheetDataDoc."
-            return this.FindRange(rangeAddress)
-        }
-
-        DeleteStringFromSharedStrings(Value)
-        {
-
-        }
-
-        FindRow(rangeAddress)
-        {
-            RegExMatch(rangeAddress, "\d+$", rowNumber)
-            found := this.sheetDataDoc.getElementsByTagName("row")
-            
-            for k, v in found
-            {
-                if k.getAttribute("r") = rowNumber
-                {
-                    return k
-                }
-            }
-
-            return False
-        }
-
-        FindRange(rangeAddress)
-        {
-            found := this.sheetDataDoc.getElementsByTagName("c")
-            for k,v in found
-            {
-                ; Msgbox,% k.getAttribute("t")
-                if k.getAttribute("r") = rangeAddress
-                {
-
-                    if k.getAttribute("t") = "s"
-                    {
-                        ; it saids string. need sharedStrings data.
-                        ; Msgbox,% k.text -1
-                        ; Msgbox,% this.SharedStrings[k.text -1]
-                        return this.SharedStrings[k.text+1].text
-                    }
-                    else
-                    {
-                        return k.text
-                    }
-
-                }
-            }
-            
-        }
     }
 
 }

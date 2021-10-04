@@ -1,10 +1,14 @@
 tt := new Sheet("sheet1.xml", "sharedStrings.xml")
-; Msgbox,% tt.range["B3"]
 
-; tt.test()
-
+; MSGbox,% tt.Range("B3").text
+tt.Range("B3") := "11111"
 
 Return
+
+returnTrue()
+{
+    return "True"
+}
 
 class Sheet
 {
@@ -18,14 +22,10 @@ class Sheet
         this.SetRange()
     }
 
-    test()
-    {
-        Msgbox,% this.sharedStringsXML.getElementsByTagName("si").length
-    }
-
     getSheetData()
     {
         doc := this.LoadXML(this.sheetXML)
+        this.sheetDataDoc := doc
         found := this.findNode(doc.childNodes, "sheetData")
         if not found
             throw,"There is no found at the Sheet. At the getSheetData method."
@@ -85,20 +85,152 @@ class Sheet
     return doc
     }
 
+    
+
     SetRange()
+    {
+        ; this.Range := new _Range(["b3", "d3"])
+    }
+
+    Range[params*]
+    {
+        get
+        {
+            if Not this.sheetData
+                throw, "there is no sheetDataDoc."
+
+            if params.length() = 1
+            {
+                return this.FindRange(params[1])
+            }
+
+            ; TODO: make when multiple cells
+        }
+        set
+        {
+            if Not this.sheetData
+                throw, "there is no sheetDataDoc."
+
+            ; fixed value var with assigning.
+            ; MSgbox,% value
+
+            if params.length() = 1
+            {
+                ; um... so complicated.
+                ; how about to delete all and recreate all?
+                if found := this.FindRange(params[1], rangeOnly:=True)
+                {   
+                    ; Msgbox,% found.childNodes[0].text
+                    ; found.childNodes[0].text := 11111
+                    ; Msgbox,% found.childNodes[0].xml
+                    ; Msgbox,% this.sheetDataDoc.xml
+                    ; this.sheetDataDoc.save(this.sheetXML)
+
+                    if tAttValue := found.getAttribute("t")
+                    {
+                        if (tAttValue = "t") and (value is integer)
+                        {
+                            ; remove t attribute and remove element at the sharedStrings.xml
+                        }
+                        if (tAttValue = "t") and (value is not integer)
+                        {
+                            ; change sharedStrings value
+                        }
+                    }
+
+                    else
+                    {
+                        if value is integer
+                        {
+                            ; just change sheet value
+                        }
+                        else
+                        {
+                            ; change sheet attr 't' to 's' and add value to ...
+                        }
+                    }
+
+                }
+
+                else if this.FindRow(params[1])
+                {
+                    ; use existing row elem
+
+                }
+                else
+                {
+                    ; Create new Row Elem
+                }
+
+            }
+
+            else{
+                ; TODO: make when multiple cells
+            }
+        }
+    }
+
+    FindRow(rangeAddress)
+        {
+            RegExMatch(test, "\d+$", rowNumber)
+            found := this.sheetDataDoc.getElementsByTagName("row")
+            
+            for k, v in found
+            {
+                if k.getAttribute("r") = rowNumber
+                {
+                    return k
+                }
+            }
+
+            return False
+        }
+
+        FindRange(rangeAddress, rangeOnly:=False)
+        {
+            found := this.sheetData.getElementsByTagName("c")
+            for k,v in found
+            {
+                if rangeOnly
+                    return k
+
+                if k.getAttribute("r") = rangeAddress
+                {
+
+                    if k.getAttribute("t") = "s"
+                    {
+                        ; it saids string. need sharedStrings data.
+                        ; Msgbox,% this.SharedStrings[k.text +1]
+                        temp := this.SharedStrings[k.text+1]
+                        return temp
+                    }
+                    else
+                    {
+                        return k
+                    }
+
+                }
+            }
+            
+        }
+
+    SetRangeLegacy()
     {
         this.Range := Array()
         ; assigin _Range class for extending built-in Array class.
         this.Range.base := this._Range
         
         this.Range.sheetXML := this.sheetXML
-        ; this.Range.SharedStrings := this.SharedStrings
-        ; this.Range.sheetDataDoc := this.sheetData
-        ; this.Range.sharedStringsXML := this.sharedStringsXML
+        this.Range.SharedStrings := this.SharedStrings
+        this.Range.sheetDataDoc := this.sheetData
+        this.Range.sharedStringsXML := this.sharedStringsXML
+        this.Range.base.__Set := this._RangeMethodClass.__Set
 
     }
 
-    class _Range
+    
+
+    class _RangeLegacy
     {
         __Get(rangeAddress)
         {
@@ -106,32 +238,6 @@ class Sheet
             if Not this.sheetDataDoc
                 throw, "there is no sheetDataDoc."
             return this.FindRange(rangeAddress)
-        }
-
-        __Set(rangeAddress, Value)
-        {
-
-            ; TODO:object 세트시, recursion하는 문제가 발생함. 에러가 뜨는데, __Set을 마지막에 obj combine으로 묶어주면 어떨까
-            
-            ; If IsObject(Value)
-            ; {
-            ;     Msgbox,111111111111111
-            ; }
-            ; if this.FindRow(rageAddress)
-            ; {
-            ;     if Value is integer
-            ;     {
-
-            ;     }
-            ;     else
-            ;     {
-
-            ;     }
-            ; }
-            ; else
-            ; {
-
-            ; }
         }
 
         DeleteStringFromSharedStrings(Value)
@@ -181,6 +287,7 @@ class Sheet
             
         }
     }
+
 }
 
 

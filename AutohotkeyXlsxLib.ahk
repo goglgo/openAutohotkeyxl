@@ -1,7 +1,9 @@
 ﻿#Include class_sheet.ahk
 
+
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
+
 sheet := xl.GetSheetBySheetName("TestSheet1")
 
 Msgbox,% sheet.Range("B3").text
@@ -27,6 +29,11 @@ return
 ;   lpStr 에 추가한 sheetName 추가하고
 ;   Variant > vt:i4 쪽 숫자도 하나 올림
 
+
+; TODO: 
+    ; Add rearrange sharedStrings.xml when save. It need to check whole sheet.
+    ; check out for method architecture for well calling.
+;   
 
 class OpenAhkXl
 {
@@ -90,12 +97,28 @@ class OpenAhkXl
 
     save(toSavePath:="")
     {
+        ; adjust row span value for all sheet.
+        for n, sheetPath in this.paths.WorkSheetsPathList
+        {
+            ; TODO add if no modified. pass this process
+
+            doc := this.LoadXML(sheetPath)
+            spans := this.RowSpanCheck(sheetDoc)
+            resRow := doc.getElementsByTagName("row")
+
+            for k, v in resRow
+            {
+                row.setAttribute("spans", spans)
+            }
+            doc.save(sheetPath)
+        }
+
+
         ; it just for save func.
         if not toSavePath
             toSavePath := this.xlsxPath
 
         SplitPath, % toSavePath, , FileDir, ,FileNoExt
-
         SplitPath, % this.xlsxPath, , , ,xlsxFileNoExt
 
         if not FileNoExt
@@ -109,10 +132,55 @@ class OpenAhkXl
         Command := "PowerShell.exe Compress-Archive -Path "
             . this.destPath . "/* -DestinationPath " . toSaveZipPath . " -Update"
 
-        Clipboard := Command
         RunWait %Command%,, Hide
         FileMove, % toSaveZipPath , % toSavePath, 1
 
+    }
+
+    RowSpanCheck(sheetDoc)
+    {
+        columnNumberArray := Array()
+        found := sheetDoc.getElementsByTagName("c")
+        for k,v in found
+        {
+            columnNumberArray
+                .Push(this.RangeColumnToNumber(k.getAttribute("r")))
+        }
+        ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
+        return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)
+    }
+
+    RangeColumnToNumber(range)
+    {
+        StringUpper, range, range
+        RegExMatch(range, "[a-zA-Z]+", regexString)
+
+        columnNumber := 0
+        chars := Array()
+        Loop, parse, regexString
+        {   
+            chars.Push(A_LoopField)
+        }
+
+        if chars.length() >= 4 
+            throw, "too much column char"
+
+        if chars.Length() = 1
+            columnNumber += ord(chars[1]) - 64
+
+        if chars.Length() = 2
+            columnNumber := 26 + (ord(chars[2]) - 64) + 26*(ord(chars[1])-64-1)
+
+        if chars.Length() =3
+        {
+            ; very hard to figure out this formula.
+            columnNumber := 702 + (ord(chars[3]) - 64) 
+                + 26*(ord(chars[2]) - 64 - (ord(chars[1]) - 64)) 
+                + 702*(ord(chars[1]) - 64 - 1)
+        }
+        if columnNumber > 16384
+            throw, "too big column number for excel keeping."
+        return columnNumber
     }
 
     LoadXML(xml_path)
@@ -181,7 +249,6 @@ class OpenAhkXl
             throw, "Not initialized. Must open first."
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         sheet := new Sheet(sheetPath, this.paths.sharedStrings)
-        ; this.Range := sheet
         return sheet
     }
 
@@ -191,12 +258,6 @@ class OpenAhkXl
         __New(basePath:="")
         {
             this.basePath := basePath
-
-            this.sheetsPath := Array()
-            Loop Files, % this.workSheetPath . "\*.*"
-            {
-                this.sheetsPath.Push(this.workSheetPath . "\" . A_LoopFileName)
-            }
         }
 
         app
@@ -231,6 +292,20 @@ class OpenAhkXl
         {
             get {
                 return this.basePath . "\xl\worksheets"
+            }
+        }
+
+        WorkSheetsPathList
+        {
+            get {
+                    pathList := Array()
+                    Loop, Files, % this.workSheetPath . "\*.xml"
+                    {
+                        pathList.Push(A_LoopFileFullPath)
+                    }
+                    return pathList
+
+                return 
             }
         }
 

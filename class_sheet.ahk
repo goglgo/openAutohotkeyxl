@@ -5,6 +5,33 @@
 ; Return
 ; //
 
+; TODO: change architecture.
+; testing for Sheet("B3").Range("B3").value
+
+class naduretest
+{
+    __New(langzz)
+    {
+        this.lang := langzz
+        return lang
+    }
+    __Get(tt)
+    {
+        Msgbox,% tt
+    }
+
+    __Set(k, v)
+    {
+        Msgbox,% k . "<>" . v
+    }
+}
+
+tt := new naduretest("zzzz")
+tt.value := "Asdf"
+Msgbox,% tt
+return
+
+
 class Sheet
 {
     __New(sheetXML:="", sharedStringsXML:="")
@@ -98,10 +125,16 @@ class Sheet
         {
             if Not this.sheetData
                 throw, "there is no sheetDataDoc."
-
+                
             if params.length() = 1
             {
-                return this.FindRange(params[1])
+                res := this.FindRange(params[1])
+                
+                this.res.value := res.text
+                Msgbox,% res.text
+                Msgbox,% res.value
+                ; ObjBindMethod()
+                return res
             }
 
             ; TODO: make when multiple cells
@@ -124,31 +157,6 @@ class Sheet
         }
     }
 
-    LegacygetSheetData()
-    {
-        doc := this.LoadXML(this.sheetXML)
-        this.sheetDataDoc := doc
-        found := this.findNode(doc.childNodes, "sheetData")
-        if not found
-            throw,"There is no found at the Sheet. At the getSheetData method."
-
-        return found
-    }
-
-    LegacygetSharedStrings()
-    {
-        ; when get value
-
-        doc := this.LoadXML(this.sharedStringsXML)
-        this.sharedStringsDoc := doc
-        tTags:= doc.getElementsByTagName("t") 
-
-        ; it has no __ENum. so rearrange.
-        result := Array()
-        for k, v in tTags
-            result.Push(k)
-        return result 
-    }
 
 
     WriteCell(range, value)
@@ -229,20 +237,11 @@ class Sheet
                 {   
                     ; make row node
                     RegExMatch(range, "\d+$", rowNumber)
-                    spans := this.RowSpanCheck()
                     row := doc.createNode(1, "row", ns)
                     row.setAttribute("spans", spans)
                     row.setAttribute("r", rowNumber)
                     row.setAttribute("x14ac:dyDescent", 0.3)
-                    ; row.setAttribute("xmlns:x14ac", ns2)
                     row.appendChild(chracterElement)
-
-                    ; all row change the rowSpan value
-                    resRow := doc.getElementsByTagName("row")
-                    for k, v in resRow
-                    {
-                        row.setAttribute("spans", spans)
-                    }
 
                     ; append row to sheetdata node
                     resTag := this.sheetDataDoc.getElementsByTagName("sheetData")
@@ -256,52 +255,6 @@ class Sheet
             doc.save(this.sharedStringsXML)
         }
         this.sheetDataDoc.save(this.sheetXML)
-    }
-
-    RowSpanCheck()
-    {
-        columnNumberArray := Array()
-        found := this.sheetData.getElementsByTagName("c")
-        for k,v in found
-        {
-            columnNumberArray
-                .Push(this.RangeColumnToNumber(k.getAttribute("r")))
-        }
-        ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
-        return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)
-    }
-
-    RangeColumnToNumber(range)
-    {
-        StringUpper, range, range
-        RegExMatch(range, "[a-zA-Z]+", regexString)
-
-        columnNumber := 0
-        chars := Array()
-        Loop, parse, regexString
-        {   
-            chars.Push(A_LoopField)
-        }
-
-        if chars.length() >= 4 
-            throw, "too much column char"
-
-        if chars.Length() = 1
-            columnNumber += ord(chars[1]) - 64
-
-        if chars.Length() = 2
-            columnNumber := 26 + (ord(chars[2]) - 64) + 26*(ord(chars[1])-64-1)
-
-        if chars.Length() =3
-        {
-            ; very hard to figure out this formula.
-            columnNumber := 702 + (ord(chars[3]) - 64) 
-                + 26*(ord(chars[2]) - 64 - (ord(chars[1]) - 64)) 
-                + 702*(ord(chars[1]) - 64 - 1)
-        }
-        if columnNumber > 16384
-            throw, "too big column number for excel keeping."
-        return columnNumber
     }
 
     FindRow(rangeAddress)
@@ -333,12 +286,6 @@ class Sheet
 
                 if k.getAttribute("t") = "s"
                 {
-                    ; it saids string. need sharedStrings data.
-                    ; Msgbox,% this.SharedStrings[k.text +1]
-                    ; Msgbox,% k.text+1
-                    ; temp := this.SharedStrings[k.text]
-                    ; for k, v in temp
-                    ;     Msgbox,% k . "<>" . v.text
                     temp := this.SharedStrings
                     return temp[k.text+1]
                 }
@@ -352,7 +299,22 @@ class Sheet
         
     }
 
+    class RangeClass
+    {
+        __New()
+        {
+            return 
+        }
+        value
+        {
+            get {
+                return this.text
+            }
+        }
+    }
+
 }
+
 
 
 

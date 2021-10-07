@@ -8,80 +8,20 @@
 ; TODO: change architecture.
 ; testing for Sheet("B3").Range("B3").value
 
-class naduretest
+; tt := new naduretest("zzzz")
+; tt.value := "Asdf"
+; Msgbox,% tt
+; return
+
+
+; rng := new RangeClass("B3")
+; rng.tt := "asdf"
+
+
+
+class BaseMethod
 {
-    __New(langzz)
-    {
-        this.lang := langzz
-        return lang
-    }
-    __Get(tt)
-    {
-        Msgbox,% tt
-    }
 
-    __Set(k, v)
-    {
-        Msgbox,% k . "<>" . v
-    }
-}
-
-tt := new naduretest("zzzz")
-tt.value := "Asdf"
-Msgbox,% tt
-return
-
-
-class Sheet
-{
-    __New(sheetXML:="", sharedStringsXML:="")
-    {
-        if not FileExist(sheetXML)
-            throw, "Can't find sheet.xml file."
-
-        if not FileExist(sharedStringsXML)
-            throw, "Can't find sharedStrings.xml file."
-
-        this.sheetXML := sheetXML
-        this.sharedStringsXML := sharedStringsXML
-
-        ; this.sheetData := this.getSheetData()
-        ; this.SharedStrings := this.getSharedStrings()
-    }
-
-    sheetData
-    {
-        get
-        {
-            doc := this.LoadXML(this.sheetXML)
-            this.sheetDataDoc := doc
-            found := this.findNode(doc.childNodes, "sheetData")
-            if not found
-                throw,"There is no found at the Sheet. please check sheet.xml."
-            ; Msgbox,% found.xml
-            return found
-        }
-    }
-
-    SharedStrings
-    {
-        get
-        {
-            doc := this.LoadXML(this.sharedStringsXML)
-            this.sharedStringsDoc := doc
-            tTags:= doc.getElementsByTagName("t") 
-
-            ; it has no __ENum. so rearrange.
-            result := Array()
-            for k, v in tTags
-                result.Push(k)
-            return result 
-        }
-    }
-
-    
-
-    
     findNode(xmlnodes, nodename:="")
     {
         for k, v in xmlnodes
@@ -118,46 +58,178 @@ class Sheet
     return doc
     }
 
+    sheetData()
+    {
+        doc := this.LoadXML(this.sheetXML)
+        this.sheetDataDoc := doc
+        found := this.findNode(doc.childNodes, "sheetData")
+        if not found
+            throw,"There is no found at the Sheet. please check sheet.xml."
+        ; Msgbox,% found.xml
+        return found
+    }
+
+    SharedStrings()
+    {
+        doc := this.LoadXML(this.sharedStringsXML)
+        this.sharedStringsDoc := doc
+        tTags:= doc.getElementsByTagName("t") 
+
+        ; it has no __ENum. so rearrange.
+        result := Array()
+        for k, v in tTags
+            result.Push(k)
+        return result 
+    }
+}
+
+
+
+class Sheet extends BaseMethod
+{
+    __New(sheetXML:="", sharedStringsXML:="")
+    {
+        if not FileExist(sheetXML)
+            throw, "Can't find sheet.xml file."
+
+        if not FileExist(sharedStringsXML)
+            throw, "Can't find sharedStrings.xml file."
+
+        this.sheetXML := sheetXML
+        this.sharedStringsXML := sharedStringsXML
+
+        ; this.sheetData := this.getSheetData()
+        ; this.SharedStrings := this.getSharedStrings()
+    }
+
+    ; sheetData
+    ; {
+    ;     get
+    ;     {
+    ;         doc := this.LoadXML(this.sheetXML)
+    ;         this.sheetDataDoc := doc
+    ;         found := this.findNode(doc.childNodes, "sheetData")
+    ;         if not found
+    ;             throw,"There is no found at the Sheet. please check sheet.xml."
+    ;         ; Msgbox,% found.xml
+    ;         return found
+    ;     }
+    ; }
+
+    ; SharedStrings
+    ; {
+    ;     get
+    ;     {
+    ;         doc := this.LoadXML(this.sharedStringsXML)
+    ;         this.sharedStringsDoc := doc
+    ;         tTags:= doc.getElementsByTagName("t") 
+
+    ;         ; it has no __ENum. so rearrange.
+    ;         result := Array()
+    ;         for k, v in tTags
+    ;             result.Push(k)
+    ;         return result 
+    ;     }
+    ; }
 
     Range[params*]
     {
         get
         {
+
+            ; params := Array()
+            ; params["sharedSheetDoc"] := this.sharedSheetDoc
+            ; params["sheetDataDoc"] := this.sheetDataDoc
+            ; params["sheetXML"] := this.sheetXML
+            ; params["sharedStringsXML"] := this.sharedStringsXML
+            ; params["sheetData"] := this.sheetData
+
+            return new RangeClass(this.sheetXML, this.sharedStringsXML, params*)
+        }
+
+        set
+        {
+            throw, "can't assigining variable to this property."
+        }
+    }
+
+    ; Range[params*]
+    ; {
+    ;     get
+    ;     {
+    ;         if Not this.sheetData
+    ;             throw, "there is no sheetDataDoc."
+                
+    ;         if params.length() = 1
+    ;         {
+    ;             res := this.FindRange(params[1])
+                
+    ;             this.res.value := res.text
+    ;             ; Msgbox,% res.text
+    ;             ; Msgbox,% res.value
+    ;             ; ObjBindMethod()
+    ;             return res
+    ;         }
+
+    ;         ; TODO: make when multiple cells
+    ;     }
+
+    ;     set
+    ;     {
+    ;         if Not this.sheetData
+    ;             throw, "there is no sheetDataDoc."
+
+    ;         ; fixed value var with assigning.
+    ;         if params.length() = 1
+    ;         {   
+    ;             this.WriteCell(params[1], value)
+    ;         }
+
+    ;         else {
+    ;             ; TODO: make when multiple cells
+    ;         }
+    ;     }
+    ; }
+
+
+}
+
+
+class RangeClass extends BaseMethod
+{
+    __New(sheetXML, sharedStringsXML, params*)
+    {
+        Msgbox,% sheetXML . "<>" . params[1]
+        if not FileExist(sheetXML)
+            throw, "Can't find sheet.xml file."
+
+        if not FileExist(sharedStringsXML)
+            throw, "Can't find sharedStrings.xml file."
+
+        this.sheetXML := sheetXML
+        this.sharedStringsXML := sharedStringsXML
+        this.params := params
+    }
+
+    value
+    {
+        get {
+            
             if Not this.sheetData
-                throw, "there is no sheetDataDoc."
-                
-            if params.length() = 1
+                throw, "there is no sheetDataDoc."  
+            if this.params.length() = 1
             {
-                res := this.FindRange(params[1])
-                
-                this.res.value := res.text
-                Msgbox,% res.text
-                Msgbox,% res.value
-                ; ObjBindMethod()
-                return res
+                res := this.FindRange(this.params[1])
+                return res.text
             }
 
             ; TODO: make when multiple cells
         }
 
-        set
-        {
-            if Not this.sheetData
-                throw, "there is no sheetDataDoc."
+        set {
 
-            ; fixed value var with assigning.
-            if params.length() = 1
-            {   
-                this.WriteCell(params[1], value)
-            }
-
-            else {
-                ; TODO: make when multiple cells
-            }
         }
     }
-
-
 
     WriteCell(range, value)
     {
@@ -298,27 +370,7 @@ class Sheet
         }
         
     }
-
-    class RangeClass
-    {
-        __New()
-        {
-            return 
-        }
-        value
-        {
-            get {
-                return this.text
-            }
-        }
-    }
-
 }
-
-
-
-
-
-
+    
 
 

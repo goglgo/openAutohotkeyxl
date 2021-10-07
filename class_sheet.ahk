@@ -18,7 +18,6 @@
 ; rng.tt := "asdf"
 
 
-
 class BaseMethod
 {
 
@@ -65,7 +64,6 @@ class BaseMethod
         found := this.findNode(doc.childNodes, "sheetData")
         if not found
             throw,"There is no found at the Sheet. please check sheet.xml."
-        ; Msgbox,% found.xml
         return found
     }
 
@@ -97,100 +95,12 @@ class Sheet extends BaseMethod
 
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
-
-        ; this.sheetData := this.getSheetData()
-        ; this.SharedStrings := this.getSharedStrings()
     }
 
-    ; sheetData
-    ; {
-    ;     get
-    ;     {
-    ;         doc := this.LoadXML(this.sheetXML)
-    ;         this.sheetDataDoc := doc
-    ;         found := this.findNode(doc.childNodes, "sheetData")
-    ;         if not found
-    ;             throw,"There is no found at the Sheet. please check sheet.xml."
-    ;         ; Msgbox,% found.xml
-    ;         return found
-    ;     }
-    ; }
-
-    ; SharedStrings
-    ; {
-    ;     get
-    ;     {
-    ;         doc := this.LoadXML(this.sharedStringsXML)
-    ;         this.sharedStringsDoc := doc
-    ;         tTags:= doc.getElementsByTagName("t") 
-
-    ;         ; it has no __ENum. so rearrange.
-    ;         result := Array()
-    ;         for k, v in tTags
-    ;             result.Push(k)
-    ;         return result 
-    ;     }
-    ; }
-
-    Range[params*]
+    Range(params*)
     {
-        get
-        {
-
-            ; params := Array()
-            ; params["sharedSheetDoc"] := this.sharedSheetDoc
-            ; params["sheetDataDoc"] := this.sheetDataDoc
-            ; params["sheetXML"] := this.sheetXML
-            ; params["sharedStringsXML"] := this.sharedStringsXML
-            ; params["sheetData"] := this.sheetData
-
-            return new RangeClass(this.sheetXML, this.sharedStringsXML, params*)
-        }
-
-        set
-        {
-            throw, "can't assigining variable to this property."
-        }
+        return new RangeClass(this.sheetXML, this.sharedStringsXML, params*)
     }
-
-    ; Range[params*]
-    ; {
-    ;     get
-    ;     {
-    ;         if Not this.sheetData
-    ;             throw, "there is no sheetDataDoc."
-                
-    ;         if params.length() = 1
-    ;         {
-    ;             res := this.FindRange(params[1])
-                
-    ;             this.res.value := res.text
-    ;             ; Msgbox,% res.text
-    ;             ; Msgbox,% res.value
-    ;             ; ObjBindMethod()
-    ;             return res
-    ;         }
-
-    ;         ; TODO: make when multiple cells
-    ;     }
-
-    ;     set
-    ;     {
-    ;         if Not this.sheetData
-    ;             throw, "there is no sheetDataDoc."
-
-    ;         ; fixed value var with assigning.
-    ;         if params.length() = 1
-    ;         {   
-    ;             this.WriteCell(params[1], value)
-    ;         }
-
-    ;         else {
-    ;             ; TODO: make when multiple cells
-    ;         }
-    ;     }
-    ; }
-
 
 }
 
@@ -199,7 +109,6 @@ class RangeClass extends BaseMethod
 {
     __New(sheetXML, sharedStringsXML, params*)
     {
-        Msgbox,% sheetXML . "<>" . params[1]
         if not FileExist(sheetXML)
             throw, "Can't find sheet.xml file."
 
@@ -214,7 +123,6 @@ class RangeClass extends BaseMethod
     value
     {
         get {
-            
             if Not this.sheetData
                 throw, "there is no sheetDataDoc."  
             if this.params.length() = 1
@@ -227,7 +135,16 @@ class RangeClass extends BaseMethod
         }
 
         set {
-
+            ; takes value to value
+            if IsObject(value)
+            {
+                ; if value is object(multiple values)
+            }
+            else
+            {
+                this.WriteCell(this.params[1], value)
+            }
+            
         }
     }
 
@@ -235,7 +152,7 @@ class RangeClass extends BaseMethod
     {
         ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
-        doc := this.sharedStringsDoc
+        doc := this.LoadXML(this.sharedStringsXML)
         StringUpper, range, range
 
         chracterElementcheck := this.FindRange(range, rangeOnly:=True)
@@ -347,10 +264,10 @@ class RangeClass extends BaseMethod
 
     FindRange(rangeAddress, rangeOnly:=False)
     {
-        found := this.sheetData.getElementsByTagName("c")
+        sheetData := this.sheetData()
+        found := sheetData.getElementsByTagName("c")
         for k,v in found
         {
-
             if k.getAttribute("r") = rangeAddress
             {   
                 if rangeOnly
@@ -358,7 +275,8 @@ class RangeClass extends BaseMethod
 
                 if k.getAttribute("t") = "s"
                 {
-                    temp := this.SharedStrings
+                    ; temp := this.SharedStrings
+                    temp := this.SharedStrings()
                     return temp[k.text+1]
                 }
                 else

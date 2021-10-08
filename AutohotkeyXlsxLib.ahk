@@ -7,9 +7,8 @@ xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetName("TestSheet1")
 
 Msgbox,% sheet.Range("B3").value
+
 sheet.Range("B3").value := "Asdfasd"
-; sheet.Range("C10") := "asdfadsf"
-; sheet.Range("D11").value := ["zzzzz"]
 Msgbox,% sheet.Range("B3").value
 
 xl.save("Ttt.xlsx")

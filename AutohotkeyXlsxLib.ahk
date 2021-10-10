@@ -1,17 +1,26 @@
 ﻿#Include class_sheet.ahk
+#Include const.ahk
 
 
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 
-sheet := xl.GetSheetBySheetName("TestSheet1")
+xl.addSheet("Asdfa")
 
-Msgbox,% sheet.Range("B3").value
 
-sheet.Range("B3").value := "Asdfasd"
-Msgbox,% sheet.Range("B3").value
+
+; Msgbox,% sheet.Range("B3").value
+
+; sheet.Range("B3").value := "Asdfasd"
+; Msgbox,% sheet.Range("B3").value
 
 xl.save("Ttt.xlsx")
+
+
+; xl := new OpenAhkXl()
+; xl.open("aaaa.xlsx")
+
+
 
 
 return
@@ -28,11 +37,10 @@ return
 ;   lpStr 에 추가한 sheetName 추가하고
 ;   Variant > vt:i4 쪽 숫자도 하나 올림
 
+; TODO:
+; sharedStrings 정리
 
-; TODO: 
-    ; Add rearrange sharedStrings.xml when save. It need to check whole sheet.
-    ; check out for method architecture for well calling.
-;   
+
 
 class OpenAhkXl
 {
@@ -60,6 +68,90 @@ class OpenAhkXl
         ; Load paths class
         this.paths := new this.PathInfo(this.destPath)
         this.GetSheetInfo()
+    }
+    addSheet(sheetName)
+    {
+        ; 새 시트 작성시 바꿔야 할 것
+        ; xl\worksheet\sheet[N].xml 추가(빈 시트 xml 따로 필요)
+        ; xl\workbook.xml
+        ;   SheetName 지정(안 겹치게), sheetID 하나 올려서 추가, r:id 올려서 추가
+        ; docProps\app.xml
+        ;   Vector Size 올리고
+        ;   lpStr 에 추가한 sheetName 추가하고
+        ;   Variant > vt:i4 쪽 숫자도 하나 올림
+
+        if not sheetName
+            throw, "There is no sheet name. it requires."
+
+        ns := ""
+        sheetCount := this.Paths.WorkSheetsPathList.Length() + 1
+
+        filePath := this.Paths.workSheetPath . "\sheet" . sheetCount . ".xml"
+        FileAppend, %newSheetXMLFormat%, %filePath%
+
+        workBook := this.loadXML(this.Paths.workbook)
+
+        ; Msgbox,% workBook.getElementsByTagName("sheet").Length()
+
+        ; check sheetName duplication
+        for k, v in workBook.getElementsByTagName("sheet")
+        {
+            if k.getAttribute("name") = sheetName
+            {
+                throw, "there is same sheet name."
+            }
+        }
+
+        ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        nsType := "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
+        nsContentType := "http://schemas.openxmlformats.org/package/2006/content-types"
+        ; ns2 := "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+        sheetElement := workBook.createNode(1, "sheet", ns)
+
+        sheetElement.setAttribute("name", sheetName)
+        sheetElement.setAttribute("sheetId", sheetCount)
+        sheetElement.setAttribute("r:id", "rId" . sheetCount)
+        ; sheetElement.setAttribute("xmlns:r", ns2)
+
+        ; sheets has just one.
+        for k, v in workBook.getElementsByTagName("sheets")
+        {
+            k.appendChild(sheetElement)
+        }
+
+        workBook.save(this.Paths.workbook)
+
+        app := this.loadXML(this.Paths.app)
+        for k, v in app.getElementsByTagName("vt:i4")
+        {
+            k.text := sheetCount
+        }
+        vtlpstrElement := app.createNode(1, "vt:lpstr", nsType)
+        vtlpstrElement.text := sheetName
+
+        for k, v in app.getElementsByTagName("vt:lpstr")
+        {
+            if k.parentNode.nodeName = "vt:vector"
+            {
+                k.parentNode.appendChild(vtlpstrElement)
+                k.parentNode.setAttribute("size", sheetCount)
+            }
+        }
+        app.save(this.Paths.app)
+        
+        contentType := this.LoadXML(this.Paths.ContentType)
+        contentTypeAttr := "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
+        partName := "/xl/worksheets/sheet" . sheetCount . ".xml"
+
+        overrideElement := contentType.createNode(1, "Override", nsContentType)
+        overrideElement.setAttribute("PartName", partName)
+        overrideElement.setAttribute("ContentType", contentTypeAttr)
+
+        contentType.childNodes[1].appendChild(overrideElement)
+        Msgbox,% contentType.xml
+        contentType.save(this.Paths.ContentType)
+        contentType.save(A_ScriptDir . "\tas.xml")
     }
 
     CheckValidation()
@@ -94,7 +186,7 @@ class OpenAhkXl
 
     }
 
-    save(toSavePath:="")
+    RearrangeRowSpan()
     {
         ; adjust row span value for all sheet.
         for n, sheetPath in this.paths.WorkSheetsPathList
@@ -111,7 +203,11 @@ class OpenAhkXl
             }
             doc.save(sheetPath)
         }
+    }
 
+    save(toSavePath:="")
+    {
+        this.RearrangeRowSpan()
 
         ; it just for save func.
         if not toSavePath
@@ -126,7 +222,6 @@ class OpenAhkXl
             FileDir := A_ScriptDir
 
         toSaveZipPath := FileDir . "\" . FileNoExt . ".zip"
-
 
         Command := "PowerShell.exe Compress-Archive -Path "
             . this.destPath . "/* -DestinationPath " . toSaveZipPath . " -Update"
@@ -191,7 +286,7 @@ class OpenAhkXl
         Err := doc.parseError
         if Err.reason
         {
-            msgbox % "Error: " Err.reason
+            msgbox % "Error: " Err.reason . "`n" . A_ThisFunc
             ExitApp
         }
     return doc
@@ -305,6 +400,13 @@ class OpenAhkXl
                     return pathList
 
                 return 
+            }
+        }
+
+        ContentType
+        {
+            get {
+                return this.basePath . "\[Content_Types].xml"
             }
         }
 

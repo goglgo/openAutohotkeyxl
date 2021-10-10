@@ -18,6 +18,9 @@
 ; rng.tt := "asdf"
 
 
+; newSheetXMLFormat : New Sheet XML
+
+
 class BaseMethod
 {
 
@@ -82,7 +85,7 @@ class BaseMethod
 }
 
 
-
+; Sheet class
 class Sheet extends BaseMethod
 {
     __New(sheetXML:="", sharedStringsXML:="")
@@ -99,14 +102,18 @@ class Sheet extends BaseMethod
 
     Range(params*)
     {
-        return new RangeClass(this.sheetXML, this.sharedStringsXML, params*)
+        return new RangeClass(this.sheetXML
+            , this.sharedStringsXML, params*)
     }
 
 }
 
-
+; Range Class
 class RangeClass extends BaseMethod
 {
+    ; sheetXML - sheetXML path
+    ; sharedStringsXML : sharedStringsXML path
+    ; params : Cell Address
     __New(sheetXML, sharedStringsXML, params*)
     {
         if not FileExist(sheetXML)
@@ -189,7 +196,6 @@ class RangeClass extends BaseMethod
             ; 1 : element
             ; 2 : text
             ; Type : https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms766473(v=vs.85)
-
             
             si := doc.createNode(1, "si", ns)
             t := doc.createNode(1, "t", ns) ; text
@@ -211,6 +217,7 @@ class RangeClass extends BaseMethod
                 }
             
             elemCount := doc.getElementsByTagName("t").length
+
             chracterElement.childNodes[0].text := elemCount -1
 
             if not chracterElementcheck
@@ -241,9 +248,11 @@ class RangeClass extends BaseMethod
 
                 }
             }
+
             doc.save(this.sharedStringsXML)
         }
         this.sheetDataDoc.save(this.sheetXML)
+        this.sheetDataDoc.save(A_ScriptDir . "\example.xml")
     }
 
     FindRow(rangeAddress)

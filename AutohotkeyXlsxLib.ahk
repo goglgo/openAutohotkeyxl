@@ -69,6 +69,7 @@ class OpenAhkXl
         this.paths := new this.PathInfo(this.destPath)
         this.GetSheetInfo()
     }
+
     addSheet(sheetName)
     {
         ; 새 시트 작성시 바꿔야 할 것
@@ -91,8 +92,6 @@ class OpenAhkXl
 
         workBook := this.loadXML(this.Paths.workbook)
 
-        ; Msgbox,% workBook.getElementsByTagName("sheet").Length()
-
         ; check sheetName duplication
         for k, v in workBook.getElementsByTagName("sheet")
         {
@@ -105,14 +104,11 @@ class OpenAhkXl
         ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         nsType := "http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"
         nsContentType := "http://schemas.openxmlformats.org/package/2006/content-types"
-        ; ns2 := "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
         sheetElement := workBook.createNode(1, "sheet", ns)
-
         sheetElement.setAttribute("name", sheetName)
         sheetElement.setAttribute("sheetId", sheetCount)
         sheetElement.setAttribute("r:id", "rId" . sheetCount)
-        ; sheetElement.setAttribute("xmlns:r", ns2)
 
         ; sheets has just one.
         for k, v in workBook.getElementsByTagName("sheets")
@@ -149,9 +145,58 @@ class OpenAhkXl
         overrideElement.setAttribute("ContentType", contentTypeAttr)
 
         contentType.childNodes[1].appendChild(overrideElement)
-        Msgbox,% contentType.xml
         contentType.save(this.Paths.ContentType)
-        contentType.save(A_ScriptDir . "\tas.xml")
+
+    }
+
+    WorkBookRelsRearrange()
+    {
+        relsTypeNs := "http://schemas.openxmlformats.org/package/2006/relationships"
+        workbookRel := this.LoadXML(this.Paths.Workbook_rels)
+
+        idIdx := 0
+        for k, v in workbookRel.childNodes[1].childNodes
+        {
+            k.parentNode.removeChild(workbookRel.childNodes[1].childNodes.item(0))
+        }
+
+        relsType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet"
+        Loop, Files, % this.Paths.workSheetPath . "\*.xml"
+        {
+            idIdx += 1
+            relElement := this.RelsElementCreator(workbookRel, idIdx, relsType, "worksheets/" . A_LoopFileName, relsTypeNs)
+            workbookRel.childNodes[1].appendChild(relElement)
+        }
+
+        relsType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
+        Loop, Files, % this.Paths.theme . "\*.xml"
+        {
+            idIdx += 1
+            relElement := this.RelsElementCreator(workbookRel, idIdx, relsType, "theme/" . A_LoopFileName, relsTypeNs)
+            workbookRel.childNodes[1].appendChild(relElement)
+        }
+
+        relsType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"
+        idIdx += 1
+        relElement := this.RelsElementCreator(workbookRel, idIdx, relsType, "styles.xml", relsTypeNs)
+        workbookRel.childNodes[1].appendChild(relElement)
+        
+
+        relsType := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings"
+        idIdx += 1
+        relElement := this.RelsElementCreator(workbookRel, idIdx, relsType, "sharedStrings.xml", relsTypeNs)
+        workbookRel.childNodes[1].appendChild(relElement)
+
+        workbookRel.save(this.Paths.Workbook_rels)
+    }
+
+    RelsElementCreator(doc, idx, relType, Target, ns)
+    {
+        relsElement := doc.createNode(1, "Relationship", ns)
+        relsElement.setAttribute("Id" , "rId" . idx)
+        relsElement.setAttribute("Type" , relType)
+        relsElement.setAttribute("Target" , Target)
+        return relsElement
     }
 
     CheckValidation()
@@ -208,6 +253,7 @@ class OpenAhkXl
     save(toSavePath:="")
     {
         this.RearrangeRowSpan()
+        this.WorkBookRelsRearrange()
 
         ; it just for save func.
         if not toSavePath
@@ -286,7 +332,8 @@ class OpenAhkXl
         Err := doc.parseError
         if Err.reason
         {
-            msgbox % "Error: " Err.reason . "`n" . A_ThisFunc
+            msgbox % "Error: " Err.reason 
+                . "`n" . A_ThisFunc . "`n" . xml_path
             ExitApp
         }
     return doc
@@ -407,6 +454,20 @@ class OpenAhkXl
         {
             get {
                 return this.basePath . "\[Content_Types].xml"
+            }
+        }
+
+        Workbook_rels
+        {
+            get {
+                return this.basePath . "\xl\_rels\workbook.xml.rels"
+            }
+        }
+
+        theme
+        {
+            get {
+                return this.basePath . "\xl\theme"
             }
         }
 

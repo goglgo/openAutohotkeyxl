@@ -54,7 +54,7 @@ class BaseMethod
         Err := doc.parseError
         if Err.reason
         {
-            msgbox % "Error: " Err.reason
+            msgbox % "Error: " Err.reason . "`n: " . xml_path
             ExitApp
         }
     return doc

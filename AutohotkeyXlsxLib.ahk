@@ -3,24 +3,17 @@
 
 
 xl := new OpenAhkXl()
-xl.open("aaaa.xlsx")
+xl.open("bbbbbbbb.xlsx")
 
-xl.addSheet("Asdfa")
-
-
-
+; xl.addSheet("Asdfa")
+sheet := xl.GetSheetBySheetNo(1)
+; Msgbox
+Msgbox,% sheet.Range("B2").value
+Msgbox,% sheet.Range("B4").value
 ; Msgbox,% sheet.Range("B3").value
-
-; sheet.Range("B3").value := "Asdfasd"
-; Msgbox,% sheet.Range("B3").value
-
+sheet.Range("B3").value := "Asdfasd"
+Msgbox,% sheet.Range("B3").value
 xl.save("Ttt.xlsx")
-
-
-; xl := new OpenAhkXl()
-; xl.open("aaaa.xlsx")
-
-
 
 
 return
@@ -146,7 +139,7 @@ class OpenAhkXl
 
         contentType.childNodes[1].appendChild(overrideElement)
         contentType.save(this.Paths.ContentType)
-
+        this.GetSheetInfo()
     }
 
     WorkBookRelsRearrange()
@@ -366,10 +359,12 @@ class OpenAhkXl
         for k, v in res
         {
             name := k.getAttribute("name")
-            sheetNo := k.getAttribute("sheetId")
+            sheetrID := k.getAttribute("r:id")
+            RegExMatch(sheetrID, "\d+$", sheetNo)
             
             this.sheetNameArray[name] := sheetNo
-            this.sheetNoArray.Push(sheetNo)
+            ; this.sheetNoArray.Push(sheetNo)
+            this.sheetNoArray["Sheet" . sheetNo] := sheetNo
         }
     }
 
@@ -386,7 +381,7 @@ class OpenAhkXl
 
     GetSheetBySheetNo(sheetNo)
     {   
-        if not this.sheetNoArray[sheetNo]
+        if not this.sheetNoArray["Sheet" . sheetNo]
             throw, "Not initialized. Must open first."
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         sheet := new Sheet(sheetPath, this.paths.sharedStrings)
@@ -399,6 +394,11 @@ class OpenAhkXl
         __New(basePath:="")
         {
             this.basePath := basePath
+            ; newSheetSharedStrings
+            if not fileExist(this.sharedStrings)
+            {
+                FileAppend, %newSheetSharedStrings%, % this.sharedStrings
+            }
         }
 
         app

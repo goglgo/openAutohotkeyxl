@@ -1,4 +1,4 @@
-global newSheetXMLFormat
+global newSheetXMLFormat, newSheetSharedStrings
 
 newSheetXMLFormat =
 (
@@ -17,4 +17,14 @@ newSheetXMLFormat =
     <pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
     <pageSetup paperSize="9" orientation="portrait" r:id="rId1"/>
 </worksheet>
+)
+
+newSheetSharedStrings = 
+(
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="1" uniqueCount="1">
+    <si>
+
+    </si>
+</sst>
 )

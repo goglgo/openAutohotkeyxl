@@ -21,6 +21,11 @@
 ; newSheetXMLFormat : New Sheet XML
 
 
+; sheet := new Sheet("sheet1.xml", "sharedStrings.xml")
+; Msgbox,% sheet.Range("B3").value
+; Msgbox,% sheet.Range("b3").value
+; return
+
 class BaseMethod
 {
 
@@ -125,7 +130,26 @@ class RangeClass extends BaseMethod
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
         this.params := params
+
+        ; if this line. error occurs.
+        ; sheet := this.LoadXML(sheetXML)
+
+        
     }
+
+    ; CheckSheetNameSpace(doc)
+    ; {
+    ;     ns := {"xmlns":"http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    ;     , "xmlns:r":"http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    ;     , "xmlns:mc":"http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    ;     , "xmlns:x14ac":"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"}
+    ;     ; mc:Ignorable="x14ac"
+    ;     ; Msgbox,% doc.item(1).xml
+    ;     ; for k, v in ns
+    ;     ; {
+    ;     ;     doc.setAttribute(k,v)
+    ;     ; }
+    ; }
 
     value
     {
@@ -135,7 +159,14 @@ class RangeClass extends BaseMethod
             if this.params.length() = 1
             {
                 res := this.FindRange(this.params[1])
-                return res.text
+                if res
+                {
+                    return res.text
+                }
+                else
+                {
+                    return
+                }
             }
 
             ; TODO: make when multiple cells
@@ -274,6 +305,7 @@ class RangeClass extends BaseMethod
     FindRange(rangeAddress, rangeOnly:=False)
     {
         sheetData := this.sheetData()
+        ; Msgbox,% "3333333`n" . sheetData.xml
         found := sheetData.getElementsByTagName("c")
         for k,v in found
         {

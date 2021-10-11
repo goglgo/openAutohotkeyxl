@@ -134,6 +134,19 @@ class RangeClass extends BaseMethod
         ; sheet := this.LoadXML(sheetXML)
     }
 
+    ; CheckSheetNameSpace(doc)
+    ; {
+    ;     ns := {"xmlns":"http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    ;     , "xmlns:r":"http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    ;     , "xmlns:mc":"http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    ;     , "xmlns:x14ac":"http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"}
+    ;     ; mc:Ignorable="x14ac"
+    ;     ; Msgbox,% doc.item(1).xml
+    ;     ; for k, v in ns
+    ;     ; {
+    ;     ;     doc.setAttribute(k,v)
+    ;     ; }
+    ; }
 
     value
     {
@@ -178,6 +191,14 @@ class RangeClass extends BaseMethod
         mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
         
         sharedDoc := this.LoadXML(this.sharedStringsXML)
+        
+
+        ; mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+
+        ; Error occurs when modifying sharedDoc.DocumentElement
+        ; it saids read only mode
+        ; root := sharedDoc.childNodes[1]
+        ; root.setAttribute(x14ackey, x14acval)
 
         StringUpper, range, range
 

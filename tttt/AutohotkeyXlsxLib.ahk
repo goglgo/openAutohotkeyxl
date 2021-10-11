@@ -3,7 +3,6 @@
 
 
 xl := new OpenAhkXl()
-; bbbbbbbb.xlsx > tatally empty file.
 xl.open("bbbbbbbb.xlsx")
 
 ; take sheet object for short calling

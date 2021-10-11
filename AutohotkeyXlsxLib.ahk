@@ -73,6 +73,8 @@ class OpenAhkXl
         ;   Vector Size 올리고
         ;   lpStr 에 추가한 sheetName 추가하고
         ;   Variant > vt:i4 쪽 숫자도 하나 올림
+        ; [ContentType].xml
+        ;   sheet 추가
 
         if not sheetName
             throw, "There is no sheet name. it requires."
@@ -139,7 +141,33 @@ class OpenAhkXl
 
         contentType.childNodes[1].appendChild(overrideElement)
         contentType.save(this.Paths.ContentType)
+
         this.GetSheetInfo()
+    }
+
+    ContentTypeSahredStringsOverrideCheck()
+    {
+        contentType := this.LoadXML(this.Paths.ContentType)
+        nsContentType := "http://schemas.openxmlformats.org/package/2006/content-types"
+        contentTypeAttr := "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"
+        partName := "/xl/sharedStrings.xml"
+
+        for k, v in contentType.getElementsByTagName("Override")
+        {
+            if(k.getAttribute("PartName") = partName)
+            {
+                return
+            }
+        }
+
+        overrideElement := contentType.createNode(1, "Override", nsContentType)
+        overrideElement.setAttribute("PartName", partName)
+        overrideElement.setAttribute("ContentType", contentTypeAttr)
+
+        contentType.childNodes[1].appendChild(overrideElement)
+
+        contentType.save(this.Paths.ContentType)
+
     }
 
     WorkBookRelsRearrange()
@@ -179,7 +207,6 @@ class OpenAhkXl
         idIdx += 1
         relElement := this.RelsElementCreator(workbookRel, idIdx, relsType, "sharedStrings.xml", relsTypeNs)
         workbookRel.childNodes[1].appendChild(relElement)
-
         workbookRel.save(this.Paths.Workbook_rels)
     }
 
@@ -231,15 +258,16 @@ class OpenAhkXl
         {
             ; TODO add if no modified. pass this process
 
-            doc := this.LoadXML(sheetPath)
+            sheetDoc := this.LoadXML(sheetPath)
             spans := this.RowSpanCheck(sheetDoc)
-            resRow := doc.getElementsByTagName("row")
+            
+            resRow := sheetDoc.getElementsByTagName("row")
 
-            for k, v in resRow
+            for row, v in resRow
             {
                 row.setAttribute("spans", spans)
             }
-            doc.save(sheetPath)
+            sheetDoc.save(sheetPath)
         }
     }
 
@@ -247,6 +275,7 @@ class OpenAhkXl
     {
         this.RearrangeRowSpan()
         this.WorkBookRelsRearrange()
+        this.ContentTypeSahredStringsOverrideCheck()
 
         ; it just for save func.
         if not toSavePath
@@ -274,10 +303,17 @@ class OpenAhkXl
     {
         columnNumberArray := Array()
         found := sheetDoc.getElementsByTagName("c")
+        res := ""
         for k,v in found
         {
+            res := this.RangeColumnToNumber(k.getAttribute("r"))
             columnNumberArray
-                .Push(this.RangeColumnToNumber(k.getAttribute("r")))
+                .Push(res)
+        }
+        if columnNumberArray.length() = 1
+        {
+            ; this.RangeColumnToNumber
+            return res . ":" . res
         }
         ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
         return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)

@@ -22,8 +22,7 @@
 
 
 ; sheet := new Sheet("sheet1.xml", "sharedStrings.xml")
-; Msgbox,% sheet.Range("B3").value
-; Msgbox,% sheet.Range("b3").value
+; sheet.Range("b3").value := "asdfas"
 ; return
 
 class BaseMethod
@@ -133,8 +132,6 @@ class RangeClass extends BaseMethod
 
         ; if this line. error occurs.
         ; sheet := this.LoadXML(sheetXML)
-
-        
     }
 
     ; CheckSheetNameSpace(doc)
@@ -190,10 +187,30 @@ class RangeClass extends BaseMethod
     {
         ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
-        doc := this.LoadXML(this.sharedStringsXML)
+        x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+        mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
+        
+        sharedDoc := this.LoadXML(this.sharedStringsXML)
+        
+
+        ; mc:Ignorable="x14ac" xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+
+        ; Error occurs when modifying sharedDoc.DocumentElement
+        ; it saids read only mode
+        ; root := sharedDoc.childNodes[1]
+        ; root.setAttribute(x14ackey, x14acval)
+
         StringUpper, range, range
 
-        chracterElementcheck := this.FindRange(range, rangeOnly:=True)
+        ; setting this.sheetDataDoc
+        chracterElementCheck := this.FindRange(range, rangeOnly:=True)
+
+        if not this.sheetDataDoc.childNodes[1].getAttribute("xmlns:x14ac")
+        {
+            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:x14ac", x14acns)
+            this.sheetDataDoc.childNodes[1].setAttribute("mc:Ignorable", "x14ac")
+            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:mc", mcns)
+        }
 
         ; Find range at the sheetDataDoc
         ; if exist found.
@@ -206,8 +223,8 @@ class RangeClass extends BaseMethod
         else
         {
             ; make new "c" elem
-            chracterElement := doc.createNode(1, "c", ns)
-            v := doc.createNode(1, "v", ns)
+            chracterElement := sharedDoc.createNode(1, "c", ns)
+            v := sharedDoc.createNode(1, "v", ns)
             chracterElement.setAttribute("r", range)
             chracterElement.appendChild(v)
 
@@ -220,6 +237,7 @@ class RangeClass extends BaseMethod
         }
         else
         {
+            
             ; when string or other(not checked other type yet.)
             chracterElement.setAttribute("t", "s")
 
@@ -228,16 +246,16 @@ class RangeClass extends BaseMethod
             ; 2 : text
             ; Type : https://docs.microsoft.com/en-us/previous-versions/windows/desktop/ms766473(v=vs.85)
             
-            si := doc.createNode(1, "si", ns)
-            t := doc.createNode(1, "t", ns) ; text
-            phoneticPr := doc.createNode(1, "phoneticPr", ns) ; text sibling
+            si := sharedDoc.createNode(1, "si", ns)
+            t := sharedDoc.createNode(1, "t", ns) ; text
+            phoneticPr := sharedDoc.createNode(1, "phoneticPr", ns) ; text sibling
             phoneticPr.setAttribute("fontId", "1")
             phoneticPr.setAttribute("type", "noConversion")
 
             t.text := value
             si.appendChild(t), si.appendChild(phoneticPr)
 
-            sst := doc.getElementsByTagName("sst")
+            sst := sharedDoc.getElementsByTagName("sst")
 
             ; sst has just one.
             for k, v in sst
@@ -247,7 +265,7 @@ class RangeClass extends BaseMethod
                     k.appendChild(si)
                 }
             
-            elemCount := doc.getElementsByTagName("t").length
+            elemCount := sharedDoc.getElementsByTagName("t").length
 
             chracterElement.childNodes[0].text := elemCount -1
 
@@ -264,7 +282,7 @@ class RangeClass extends BaseMethod
                 {   
                     ; make row node
                     RegExMatch(range, "\d+$", rowNumber)
-                    row := doc.createNode(1, "row", ns)
+                    row := sharedDoc.createNode(1, "row", ns)
                     row.setAttribute("spans", spans)
                     row.setAttribute("r", rowNumber)
                     row.setAttribute("x14ac:dyDescent", 0.3)
@@ -279,11 +297,10 @@ class RangeClass extends BaseMethod
 
                 }
             }
-
-            doc.save(this.sharedStringsXML)
+            
+            sharedDoc.save(this.sharedStringsXML)
         }
         this.sheetDataDoc.save(this.sheetXML)
-        this.sheetDataDoc.save(A_ScriptDir . "\example.xml")
     }
 
     FindRow(rangeAddress)

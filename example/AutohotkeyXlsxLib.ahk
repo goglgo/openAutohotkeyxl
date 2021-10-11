@@ -3,6 +3,7 @@
 
 
 xl := new OpenAhkXl()
+; bbbbbbbb.xlsx > tatally empty file.
 xl.open("bbbbbbbb.xlsx")
 
 ; take sheet object for short calling
@@ -16,6 +17,10 @@ sheet.Range("B3").value := "Asdfasd"
 
 ; call changed value
 Msgbox,% sheet.Range("B3").value
+
+xl.addSheet("nadure")
+sheet := xl.GetSheetBySheetNo(2)
+sheet.Range("C2").value := "done?"
 
 ; save file
 xl.save("Ttt.xlsx")

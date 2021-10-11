@@ -152,7 +152,6 @@ class RangeClass extends BaseMethod
                     return
                 }
             }
-
             ; TODO: make when multiple cells
         }
 
@@ -181,7 +180,6 @@ class RangeClass extends BaseMethod
 
         StringUpper, range, range
 
-        ; setting this.sheetDataDoc
         chracterElementCheck := this.FindRange(range, rangeOnly:=True)
 
         if not this.sheetDataDoc.childNodes[1].getAttribute("xmlns:x14ac")
@@ -216,7 +214,6 @@ class RangeClass extends BaseMethod
         }
         else
         {
-            
             ; when string or other(not checked other type yet.)
             chracterElement.setAttribute("t", "s")
 
@@ -276,7 +273,6 @@ class RangeClass extends BaseMethod
 
                 }
             }
-            
             sharedDoc.save(this.sharedStringsXML)
         }
         this.sheetDataDoc.save(this.sheetXML)
@@ -301,7 +297,6 @@ class RangeClass extends BaseMethod
     FindRange(rangeAddress, rangeOnly:=False)
     {
         sheetData := this.sheetData()
-        ; Msgbox,% "3333333`n" . sheetData.xml
         found := sheetData.getElementsByTagName("c")
         for k,v in found
         {
@@ -312,7 +307,6 @@ class RangeClass extends BaseMethod
 
                 if k.getAttribute("t") = "s"
                 {
-                    ; temp := this.SharedStrings
                     temp := this.SharedStrings()
                     return temp[k.text+1]
                 }

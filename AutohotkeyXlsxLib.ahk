@@ -92,6 +92,9 @@ class OpenAhkXl
         ns := ""
         sheetCount := this.Paths.WorkSheetsPathList.Length() + 1
 
+        if not newSheetXMLFormat
+            throw, "There is no new SheetXML default form."
+
         filePath := this.Paths.workSheetPath . "\sheet" . sheetCount . ".xml"
         FileAppend, %newSheetXMLFormat%, %filePath%
 
@@ -322,10 +325,8 @@ class OpenAhkXl
         }
         if columnNumberArray.length() = 1
         {
-            ; this.RangeColumnToNumber
             return res . ":" . res
         }
-        ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
         return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)
     }
 
@@ -409,7 +410,6 @@ class OpenAhkXl
             RegExMatch(sheetrID, "\d+$", sheetNo)
             
             this.sheetNameArray[name] := sheetNo
-            ; this.sheetNoArray.Push(sheetNo)
             this.sheetNoArray["Sheet" . sheetNo] := sheetNo
         }
     }
@@ -440,7 +440,8 @@ class OpenAhkXl
         __New(basePath:="")
         {
             this.basePath := basePath
-            ; newSheetSharedStrings
+            if not newSheetSharedStrings
+                throw, "There is no SharedStrings.xml default doc."
             if not fileExist(this.sharedStrings)
             {
                 FileAppend, %newSheetSharedStrings%, % this.sharedStrings

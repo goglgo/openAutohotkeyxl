@@ -2,6 +2,18 @@
 #Include const.ahk
 
 
+
+DeleteTest:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(2)
+
+sheet.DeleteSheet()
+xl.save("Ttt.xlsx")
+return
+
+CommonTest:
+; Common Test Script
 xl := new OpenAhkXl()
 ; bbbbbbbb.xlsx > tatally empty file.
 xl.open("bbbbbbbb.xlsx")
@@ -21,6 +33,9 @@ Msgbox,% sheet.Range("B3").value
 xl.addSheet("nadure")
 sheet := xl.GetSheetBySheetNo(2)
 sheet.Range("C2").value := "done?"
+
+; delete selected sheet
+; sheet.DeleteSheet()
 
 ; save file
 xl.save("Ttt.xlsx")
@@ -92,6 +107,10 @@ class OpenAhkXl
         ns := ""
         sheetCount := this.Paths.WorkSheetsPathList.Length() + 1
 
+        if not newSheetXMLFormat
+            throw, "There is no new SheetXML default form."
+
+        ; Make new xml form with blank.
         filePath := this.Paths.workSheetPath . "\sheet" . sheetCount . ".xml"
         FileAppend, %newSheetXMLFormat%, %filePath%
 
@@ -122,7 +141,8 @@ class OpenAhkXl
         }
 
         workBook.save(this.Paths.workbook)
-
+        
+        ; Treat app file
         app := this.loadXML(this.Paths.app)
         for k, v in app.getElementsByTagName("vt:i4")
         {
@@ -141,6 +161,7 @@ class OpenAhkXl
         }
         app.save(this.Paths.app)
         
+        ; Treat contenttype.xml
         contentType := this.LoadXML(this.Paths.ContentType)
         contentTypeAttr := "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"
         partName := "/xl/worksheets/sheet" . sheetCount . ".xml"
@@ -157,6 +178,7 @@ class OpenAhkXl
 
     ContentTypeSahredStringsOverrideCheck()
     {
+        ; It requires when start from new sheet. because it has no sharedStrings.xml.
         contentType := this.LoadXML(this.Paths.ContentType)
         nsContentType := "http://schemas.openxmlformats.org/package/2006/content-types"
         contentTypeAttr := "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"
@@ -322,10 +344,8 @@ class OpenAhkXl
         }
         if columnNumberArray.length() = 1
         {
-            ; this.RangeColumnToNumber
             return res . ":" . res
         }
-        ; Msgbox,% Min(columnNumberArray*) . ":Min`n" . Max(columnNumberArray*) . ":Max"
         return Min(columnNumberArray*) . ":" . Max(columnNumberArray*)
     }
 
@@ -409,7 +429,6 @@ class OpenAhkXl
             RegExMatch(sheetrID, "\d+$", sheetNo)
             
             this.sheetNameArray[name] := sheetNo
-            ; this.sheetNoArray.Push(sheetNo)
             this.sheetNoArray["Sheet" . sheetNo] := sheetNo
         }
     }
@@ -422,6 +441,7 @@ class OpenAhkXl
         sheetNo := this.sheetNameArray[sheetName]
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         Sheet := new Sheet(sheetPath, this.paths.sharedStrings)
+        Sheet.Paths := this.paths
         return Sheet
     }
 
@@ -430,8 +450,9 @@ class OpenAhkXl
         if not this.sheetNoArray["Sheet" . sheetNo]
             throw, "Not initialized. Must open first."
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
-        sheet := new Sheet(sheetPath, this.paths.sharedStrings)
-        return sheet
+        Sheet := new Sheet(sheetPath, this.paths.sharedStrings)
+        Sheet.Paths := this.paths
+        return Sheet
     }
 
     ; xml Paths class
@@ -440,7 +461,8 @@ class OpenAhkXl
         __New(basePath:="")
         {
             this.basePath := basePath
-            ; newSheetSharedStrings
+            if not newSheetSharedStrings
+                throw, "There is no SharedStrings.xml default doc."
             if not fileExist(this.sharedStrings)
             {
                 FileAppend, %newSheetSharedStrings%, % this.sharedStrings

@@ -6,11 +6,10 @@ doc := LoadXML("sheet1.xml")
 root := doc.documentElement
 
 
-for nodeItem in ( root.selectNodes( "//c" ),  descList2 := ""  )
-    ; descList2 .= nodeItem.getAttribute( "r" ) "|"
+for nodeItem in ( root.selectNodes( "//c" ))
     Msgbox,% nodeItem.getAttribute("r")
 
-msgbox % RTrim( descList2, "|" )
+; msgbox % RTrim( descList2, "|" )
 
 return
 LoadXML(xml_path)

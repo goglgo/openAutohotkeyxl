@@ -115,16 +115,23 @@ class Sheet extends BaseMethod
 
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
+
+        this.isThisSheetDeleted := False
     }
 
     Range(params*)
     {
+        if this.isThisSheetDeleted
+            throw, "This sheet is already deleted."
+
         return new RangeClass(this.sheetXML
             , this.sharedStringsXML, params*)
     }
 
     DeleteSheet()
     {
+        if this.isThisSheetDeleted
+            throw, "This sheet is already deleted."
         ; delete sheetN file
         ; workbook에서 sheetN 제거
         ; app vt:i4에서 숫자 -1
@@ -171,6 +178,7 @@ class Sheet extends BaseMethod
             this.ReorederSheetFile(firstElement, secondElement)
         }
 
+        ; Step 3
         ; touch [ContentType] File
         contentType :=  this.loadXML(this.paths.ContentType)
         XPathString := "//Types/Override[@PartName=""/xl/worksheets/sheet" . originSize . ".xml""]"
@@ -179,6 +187,7 @@ class Sheet extends BaseMethod
         foundItem.ParentNode.removeChild(foundItem)
         contentType.save(this.paths.ContentType)
 
+        ; Step 4
         ; touch workbook.xml
         workbook := this.loadXML(this.paths.workbook)
         XPathString := "//sheet"
@@ -193,7 +202,9 @@ class Sheet extends BaseMethod
             found.item(A_Index-1).setAttribute("r:id", "rId" . A_Index)
         }
         workbook.save(this.paths.workbook)
-        ; Msgbox,% workbook.xml
+        
+        ; Check sheet deleted. prevent doing duplicate remove.
+        this.isThisSheetDeleted := True
     }
 
     ReorederSheetFile(FirstFile, SecondFile)

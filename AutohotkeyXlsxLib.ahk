@@ -10,7 +10,6 @@ sheet := xl.GetSheetBySheetNo(2)
 
 sheet.DeleteSheet()
 xl.save("Ttt.xlsx")
-; MSgbox,intercpe
 return
 
 CommonTest:

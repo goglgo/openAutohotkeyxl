@@ -25,6 +25,7 @@
 ; sheet.Range("b3").value := "asdfas"
 ; return
 
+
 class BaseMethod
 {
 
@@ -86,6 +87,18 @@ class BaseMethod
             result.Push(k)
         return result 
     }
+
+    ; It seems not works when use with method or func.
+    ; selectXPathNodes(xmlDoc, XPathString)
+    ; {
+    ;     found := Array()
+    ;     for nodeItem in xmlDoc.selectNodes(XPathString)
+    ;     {
+    ;         ; Msgbox,% nodeItem.xml
+    ;         found.Push(nodeItem)
+    ;     }
+    ;     return found
+    ; }
 }
 
 
@@ -109,6 +122,93 @@ class Sheet extends BaseMethod
         return new RangeClass(this.sheetXML
             , this.sharedStringsXML, params*)
     }
+
+    DeleteSheet()
+    {
+        ; delete sheetN file
+        ; workbook에서 sheetN 제거
+        ; app vt:i4에서 숫자 -1
+        ; vt:lpstr 에서 시트이름 하나 제거
+        ; vt:vector 에서 size -1
+        ; ContentType에서 sheetN 제거
+
+        ; Step1: Delete this.sheetXMl file
+        WorkSheetsPathList := this.paths.WorkSheetsPathList
+        FileDelete,% this.sheetXML
+
+        ; GetSheetNo
+        SplitPath, % this.sheetXML, , , , sheetXMLFileName
+        RegExMatch(sheetXMLFileName, "\d+$", SheetNo)
+        SheetNo -= 1
+        
+        ; Step2
+        app := this.loadXml(this.paths.app)
+        ; remove sheet[N] row
+        found := app.documentElement.selectNodes("//vt:vector/vt:lpstr")
+        ; Msgbox,% found.item(0).xml ; Start from Zero
+        deleteSheetRow := found.item(SheetNo)
+        deleteSheetRow.ParentNode.removeChild(deleteSheetRow)
+
+        ; touch vt:i4
+        found := app.documentElement.selectNodes("//vt:i4")
+        foundItem := found.item(0)
+        foundItem.text -= 1
+        size := foundItem.text
+
+        ; touch vector size
+        found := app.documentElement.selectNodes("//TitlesOfParts[0]/vt:vector[0]")
+        found.item(0).setAttribute("size", size)
+
+        ; app file done
+        app := app.save(this.paths.app)
+
+        ; Reorder sheet N Files
+        originSize := WorkSheetsPathList.Length()
+        Loop,% WorkSheetsPathList.Length() - 1
+        {
+            firstElement := WorkSheetsPathList[A_Index]
+            secondElement := WorkSheetsPathList[A_Index+1]
+            this.ReorederSheetFile(firstElement, secondElement)
+        }
+
+        ; touch [ContentType] File
+        contentType :=  this.loadXML(this.paths.ContentType)
+        XPathString := "//Types/Override[@PartName=""/xl/worksheets/sheet" . originSize . ".xml""]"
+        found := contentType.documentElement.selectNodes(XPathString)
+        foundItem := found.item(0)
+        foundItem.ParentNode.removeChild(foundItem)
+        contentType.save(this.paths.ContentType)
+
+        ; touch workbook.xml
+        workbook := this.loadXML(this.paths.workbook)
+        XPathString := "//sheet"
+        found := workbook.documentElement.selectNodes(XPathString)
+        foundItem := found.item(sheetNo)
+        foundItem.ParentNode.removeChild(foundItem)
+
+        found := workbook.documentElement.selectNodes(XPathString)
+        Loop,% found.Length()
+        {
+            found.item(A_Index-1).setAttribute("sheetId", A_Index)
+            found.item(A_Index-1).setAttribute("r:id", "rId" . A_Index)
+        }
+        workbook.save(this.paths.workbook)
+        ; Msgbox,% workbook.xml
+    }
+
+    ReorederSheetFile(FirstFile, SecondFile)
+    {
+        if FileExist(FirstFile) and FileExist(SecondFile)
+            return
+
+        if !FileExist(FirstFile) and FileExist(SecondFile)
+        {
+            FileMove, % SecondFile, % FirstFile
+            return
+        }
+    }
+
+    
 
 }
 

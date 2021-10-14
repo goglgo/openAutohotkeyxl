@@ -3,6 +3,37 @@
 
 
 
+
+return
+
+MultiCellWritingTest:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+sheet.Range("B2:B4").value := "aaa"
+sheet.Range("C2:C4").value := [["aa"],["bb"],["cc"]]
+xl.save("Ttt.xlsx")
+return
+
+MultiCellGetTest:
+; MultiCell test
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+values := sheet.Range("B2:E3").value
+; else
+; values := sheet.Range("B2", "E3", "C3").value
+
+for k, rows in values
+{
+    for j, cell in rows
+    {
+        Msgbox,% cell
+    }
+}
+
+return
+
 DeleteTest:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
@@ -442,6 +473,7 @@ class OpenAhkXl
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         Sheet := new Sheet(sheetPath, this.paths.sharedStrings)
         Sheet.Paths := this.paths
+        Sheet.RangeColumnToNumber := this.RangeColumnToNumber
         return Sheet
     }
 
@@ -452,6 +484,7 @@ class OpenAhkXl
         sheetPath := this.paths.workSheetPath . "\sheet" . sheetNo . ".xml"
         Sheet := new Sheet(sheetPath, this.paths.sharedStrings)
         Sheet.Paths := this.paths
+        Sheet.RangeColumnToNumber := this.RangeColumnToNumber
         return Sheet
     }
 

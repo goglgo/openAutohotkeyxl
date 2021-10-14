@@ -124,8 +124,11 @@ class Sheet extends BaseMethod
         if this.isThisSheetDeleted
             throw, "This sheet is already deleted."
 
-        return new RangeClass(this.sheetXML
+        rangeClass := new RangeClass(this.sheetXML
             , this.sharedStringsXML, params*)
+            
+        rangeClass.RangeColumnToNumber := this.RangeColumnToNumber
+        return rangeClass
     }
 
     DeleteSheet()
@@ -251,7 +254,7 @@ class RangeClass extends BaseMethod
         get {
             if Not this.sheetData
                 throw, "there is no sheetDataDoc."  
-            if this.params.length() = 1
+            if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = False)
             {
                 res := this.FindRange(this.params[1])
                 if res
@@ -263,11 +266,39 @@ class RangeClass extends BaseMethod
                     return
                 }
             }
-            ; TODO: make when multiple cells
+            
+            ; Msgbox,% this.MultiCellCheck(this.params[1])
+            ; Get multi cell values
+            if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = True)
+            {
+                ; it saids B3:E5 format
+                addressObject := this.GetCellAddresses(this.params[1])
+                res := Array()
+                for k, row in addressObject
+                {
+                    rowArray := Array()
+                    for j, cell in row
+                    {
+                        text := this.FindRange(cell).text
+                        rowArray.Push(text)
+                    }
+                    res.Push(rowArray)
+                }
+                return res
+            }
+            if(this.params.length() >= 2 )
+            {
+                res := Array()
+                for k, cell in this.params
+                {
+                    res.Push(this.FindRange(cell).text)
+                }
+                return res
+            }
         }
 
         set {
-            ; takes value to value
+            ; takes assigning value to value var
             if IsObject(value)
             {
                 ; if value is object(multiple values)
@@ -278,6 +309,74 @@ class RangeClass extends BaseMethod
             }
             
         }
+    }
+
+    MultiCellCheck(range)
+    {
+        StringSplit, splitedRange, range, :
+        ; Msgbox,% splitedRange0
+        if splitedRange0 > 2
+            throw, "Invald Range.`n" . A_ThisFunc
+        if splitedRange0 = 2
+            return True
+        if splitedRange0 = 1
+            return False
+    }
+    
+    GetCellAddresses(range)
+    {
+        ; range
+        ; it looks like A3:E8 format
+        ; output  > array("A3", "B3", "C4" ----) like this format
+        
+        ; Split range
+        StringSplit, splitedRange, range, :
+        if splitedRange0 > 2
+            throw, "Invald Range.`n" . A_ThisFunc
+
+        ; Range Check
+        rangeColumnNum1 := this.RangeColumnToNumber(splitedRange1)
+        rangeColumnNum2 := this.RangeColumnToNumber(splitedRange2)
+
+        if rangeColumnNum1 > rangeColumnNum2
+            throw, "Invalid Range.`n" . A_ThisFunc
+        
+        RegExMatch(splitedRange1, "\d+$", rowNumber1)
+        RegExMatch(splitedRange2, "\d+$", rowNumber2)
+
+        if rowNumber1 > rowNumber2
+            throw, "Invalid Range.`n" . A_ThisFunc
+        
+        res := Array()
+        
+        ; Loop Row
+        Loop, % (rowNumber2 - rowNumber1) + 1
+        {
+            currentRow := A_Index + rowNumber1 -1
+            rowArray := Array()
+            ; Loop Column
+            Loop, % (rangeColumnNum2 - rangeColumnNum1) + 1
+            {
+                cellAddress := this.NumberToRangeColumn(rangeColumnNum1 + A_Index - 1) . currentRow
+                rowArray.Push( cellAddress )
+            }
+            res.Push(rowArray)
+        }
+        return res
+    }
+
+    NumberToRangeColumn(columnNumber)
+    {
+        columnName := ""
+
+        while (columnNumber > 0.5) ; i don't know is it ok to use 0.5 float. :)
+        {
+            modulo := Mod((columnNumber - 1), 26)
+            columnName := Chr(65 + modulo) . columnName
+            columnNumber := (columnNumber - modulo) / 26
+        } 
+
+        return Trim(columnName)
     }
 
     WriteCell(range, value)

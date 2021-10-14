@@ -302,10 +302,51 @@ class RangeClass extends BaseMethod
             if IsObject(value)
             {
                 ; if value is object(multiple values)
+
+                if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = True)
+                {
+                    addressObject := this.GetCellAddresses(this.params[1])
+                    for k, row in addressObject
+                    {
+                        for j, cell in row
+                        {
+                            this.WriteCell(cell, value[k][j])
+                        }
+                    }
+                }
             }
+
             else
             {
-                this.WriteCell(this.params[1], value)
+                ; if value is not object.
+                
+                ; if not multi cell
+                if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = False)
+                    this.WriteCell(this.params[1], value)
+
+                ; write whole range with single value
+                if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = True)
+                {
+                    addressObject := this.GetCellAddresses(this.params[1])
+                    for k, row in addressObject
+                    {
+                        for j, cell in row
+                        {
+                            this.WriteCell(cell, value)
+                        }
+                    }
+                }
+                
+                ; write certain cells with single value
+                if(this.params.length() >= 2 )
+                {
+                    for k, cell in this.params
+                    {
+                        this.WriteCell(cell, value)
+                    }
+                }
+
+                
             }
             
         }

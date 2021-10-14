@@ -1,4 +1,7 @@
 
+a := [1,2,3]
+Msgbox,% a[1]
+return
 
 range := "B3:D4"
 StringSplit, out, range, :

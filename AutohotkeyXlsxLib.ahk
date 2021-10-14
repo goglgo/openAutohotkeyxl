@@ -6,7 +6,16 @@
 
 return
 
-MultiCellTest:
+MultiCellWritingTest:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+sheet.Range("B2:B4").value := "aaa"
+sheet.Range("C2:C4").value := [["aa"],["bb"],["cc"]]
+xl.save("Ttt.xlsx")
+return
+
+MultiCellGetTest:
 ; MultiCell test
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")

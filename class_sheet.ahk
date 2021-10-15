@@ -419,6 +419,15 @@ class RangeClass extends BaseMethod
 
         return Trim(columnName)
     }
+    WriteCell_V2(range, value)
+    {
+        ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+        x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
+        mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
+
+        sharedDoc := this.LoadXML(this.sharedStringsXML)
+    }
 
     WriteCell(range, value)
     {

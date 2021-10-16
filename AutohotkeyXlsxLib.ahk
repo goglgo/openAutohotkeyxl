@@ -2,6 +2,10 @@
 #Include const.ahk
 
 
+
+return
+
+ComparisionWithCOMobj:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)

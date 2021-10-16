@@ -1,3 +1,6 @@
+
+
+
 ; // test code for sheet class below.
 ; tt := new Sheet("sheet1.xml", "sharedStrings.xml")
 ; Msgbox,% tt.Range("B3").text
@@ -410,7 +413,7 @@ class RangeClass extends BaseMethod
     {
         columnName := ""
 
-        while (columnNumber > 0.5) ; i don't know is it ok to use 0.5 float. :)
+        while (columnNumber > 0.5) ; i don't know whether it is ok for using 0.5 float. :)
         {
             modulo := Mod((columnNumber - 1), 26)
             columnName := Chr(65 + modulo) . columnName
@@ -427,6 +430,8 @@ class RangeClass extends BaseMethod
         mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
 
         sharedDoc := this.LoadXML(this.sharedStringsXML)
+
+        StringUpper, range, range
     }
 
     WriteCell(range, value)

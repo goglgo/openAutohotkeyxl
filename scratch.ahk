@@ -1,3 +1,48 @@
+ns1 := "xmlns='http://schemas.openxmlformats.org/spreadsheetml/2006/main'"
+ns2 := "xmlns:x14ac='http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac'"
+ns3 := "xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships'"
+ns4 := "xmlns:mc='http://schemas.openxmlformats.org/markup-compatibility/2006'"
+
+xml := ComObjCreate( "MSXML2.DOMDocument.6.0" )
+
+xml.Load("sheet1.xml")
+xml.async := false
+xml.setProperty("SelectionLanguage", "XPath")
+xml.setProperty("SelectionNamespaces" , ns1)
+xml.setProperty("SelectionNamespaces" , ns2)
+xml.setProperty("SelectionNamespaces" , ns3)
+xml.setProperty("SelectionNamespaces" , ns4)
+
+; tt := root.selectSingleNode( "//row/c[@r='B3']/v" )
+; tt := xml.selectNodes( "//row/c[@r='B2']" )
+tt := xml.DocumentElement.selectNodes( "//c" )
+MSgbox,% tt.item(1).xml
+
+for k in tt
+    MSgbox,% tt.xml
+Return
+; doc := LoadXML("sheet1.xml")
+
+doc := ComObjCreate( "MSXML2.DOMDocument.6.0" )
+doc.setProperty("SelectionLanguage", "XPath")
+doc.Load("sheet1.xml")
+root := doc.documentElement
+
+; //row/c[@r="B2"]
+; //row/c[@r="B2"]/v/text()
+
+; tt := root.selectNodes( "//row/c[@r='B3']/v" )
+tt := root.selectSingleNode( "//row/c[@r='B3']/v" )
+; dd := root.selectSingleNode("//row/c[@r=""B2""]/v")
+
+for nodeItem in tt
+    Msgbox,% nodeItem.xml
+
+; for nodeItem in ( rootd.selectNodes( "//row[@r='2']" ), descList := "" )
+;     descList .= nodeItem.text "|"
+
+
+return
 
 a := [1,2,3]
 Msgbox,% a[1]

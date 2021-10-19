@@ -424,8 +424,9 @@ class RangeClass extends BaseMethod
     }
     WriteCell_V2(range, value)
     {
+        ; TODO: for optimizing.
         x := "xmlns:"
-        mainNs := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
+        mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
         x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
         rns := "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ; r:
         mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006" ; mc:

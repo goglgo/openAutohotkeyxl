@@ -15,6 +15,17 @@ xml.setProperty("SelectionNamespaces" , ns1)
 xml.setProperty("SelectionNamespaces" , ns2)
 xml.setProperty("SelectionNamespaces" , ns3)
 xml.setProperty("SelectionNamespaces" , ns4)
+
+
+
+# 
+
+from xml.etree.ElementTree import parse
+tree = parse('sheet1.xml')
+root = tree.getroot()
+# 
+
+
 # xml.setProperty("SelectionNamespaces" , ns5)
 # xml.setProperty("SelectionLanguage", "XPath")
 

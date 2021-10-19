@@ -17,10 +17,10 @@ class NadureXML
     }
     _OpenXML(fileName)
     {
-        FileRead, f, %FileName%
+        FileRead, f, %fileName%
         return f
     }
-    findNodes(nodeName, extraOptions*)
+    FindNodes(nodeName, extraOptions*)
     {
         ; https://www.autohotkey.com/board/topic/117001-regexmatch-multiple-matches/
         ; nodeName := "c"

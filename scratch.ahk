@@ -1,46 +1,29 @@
 ; #Include nadureXML.ahk
 
-file := "mstest.xml"
-xml := ComObjCreate( "MSXML2.DOMDocument.6.0" )
-xml.setProperty("SelectionLanguage", "XPath")
-xml.setProperty("SelectionNamespaces", "xmlns:bk='urn:books'")
-xml.Load(file)
-xml.async := false
+; https://docs.microsoft.com/en-us/previous-versions/troubleshoot/msxml/msxml-6-matching-nodes-not-return
 
-qs := "//Publisher[. = 'MSPress']/parent`:`:node()/Title"
-qs := "//Publisher"
-bookList := xml.selectNodes(qs)
-
-if bookList.item(1)
-{   
-    Msgbox, 1
-}
-for k, v in bookList
-    msgbox,% k
-return
-
-ns1 := "xmlns='http://schemas.openxmlformats.org/spreadsheetml/2006/main'"
+ns1 := "xmlns:main='http://schemas.openxmlformats.org/spreadsheetml/2006/main'"
 ns2 := "xmlns:x14ac='http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac'"
 ns3 := "xmlns:r='http://schemas.openxmlformats.org/officeDocument/2006/relationships'"
 ns4 := "xmlns:mc='http://schemas.openxmlformats.org/markup-compatibility/2006'"
 
+ns := Format("{1} {2} {3} {4}", ns1, ns2, ns3, ns4)
 xml := ComObjCreate( "MSXML2.DOMDocument.6.0" )
 
 xml.Load("sheet1.xml")
 xml.async := false
-; xml.setProperty("SelectionLanguage", "XPath")
-; xml.setProperty("SelectionNamespaces" , ns1)
-; xml.setProperty("SelectionNamespaces" , ns2)
-; xml.setProperty("SelectionNamespaces" , ns3)
-; xml.setProperty("SelectionNamespaces" , ns4)
+xml.setProperty("SelectionLanguage", "XPath")
+xml.setProperty("SelectionNamespaces" , ns)
 
-; tt := root.selectSingleNode( "//row/c[@r='B3']/v" )
 ; tt := xml.selectNodes( "//row/c[@r='B2']" )
-tt := xml.selectNodes( "//c" )
-MSgbox,% tt.item(0).xml
+; tt := xml.DocumentElement.selectNodes("//main:c")
+ee := xml.DocumentElement.selectSingleNode("//main:c[@r='B4']")
+; dd := root.selectSingleNode( "//main:row/main:c[@main:r='B3']/main:v" )
+Msgbox,% ee.xml
+; MSgbox,% tt.item(1).text
 
-for k in tt
-    MSgbox,% tt.xml
+; for k in tt
+;     MSgbox,% k.xml
 
 Return
 ; doc := LoadXML("sheet1.xml")

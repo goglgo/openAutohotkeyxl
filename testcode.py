@@ -6,26 +6,31 @@ xml.load("sheet1.xml")
 
 # xml.setProperty("SelectionNamespaces", "xmlns='http://schemas.openxmlformats.org/spreadsheetml/2006/main'")
 
+ns0 = "xmlns:main='http://schemas.openxmlformats.org/spreadsheetml/2006/main'" # test
 ns1 = "xmlns='http://schemas.openxmlformats.org/spreadsheetml/2006/main'"
 ns2 = 'xmlns:x14ac="http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"'
 ns3 = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
 ns4 = 'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"'
 
-xml.setProperty("SelectionNamespaces" , ns1)
-xml.setProperty("SelectionNamespaces" , ns2)
-xml.setProperty("SelectionNamespaces" , ns3)
-xml.setProperty("SelectionNamespaces" , ns4)
+ns = f'{ns0} {ns2} {ns3} {ns4}'
+
+# xml.setProperty("SelectionNamespaces" , ns0)
+xml.setProperty("SelectionNamespaces" , ns)
+xml.documentElement.selectNodes("//main:c")
+# xml.setProperty("SelectionNamespaces" , ns1)
+# xml.setProperty("SelectionNamespaces" , ns2)
+# xml.setProperty("SelectionNamespaces" , ns3)
+# xml.setProperty("SelectionNamespaces" , ns4)
+
 
 
 
 # 
-
-from xml.etree.ElementTree import parse
-tree = parse('sheet1.xml')
-root = tree.getroot()
+xml.load("mstest.xml")
+xml.setProperty("SelectionNamespaces", "xmlns:bk='urn:books'")
+xml.selectNodes("//Publisher[. = 'MSPress']/parent::node()/Title")
+xml.selectNodes("//bk:Publisher[. = 'MSPress']/parent::node()/bk:Title")
 # 
-
-
 # xml.setProperty("SelectionNamespaces" , ns5)
 # xml.setProperty("SelectionLanguage", "XPath")
 

@@ -2,7 +2,12 @@
 #Include const.ahk
 
 
-
+TestCode:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+rng := sheet.Range("B3")
+rng.WriteCell_V2("B", "1")
 return
 
 ComparisionWithCOMobj:

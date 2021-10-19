@@ -424,12 +424,19 @@ class RangeClass extends BaseMethod
     }
     WriteCell_V2(range, value)
     {
-        ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-        ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
-        x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
-        mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x := "xmlns:"
+        mainNs := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
+        x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
+        rns := "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ; r:
+        mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006" ; mc:
+        
+        nameSpace := format("{1}main='{2}' {1}x14ac='{3}' {1}r='{4}' {1}mc='{5}'"
+            , x, mainNs, x14acns, rns, mcns)
 
         sharedDoc := this.LoadXML(this.sharedStringsXML)
+        sheetDoc := this.LoadXML(this.sheetXML)
+        
+        foundSheet := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
 
         StringUpper, range, range
     }
@@ -440,9 +447,10 @@ class RangeClass extends BaseMethod
         ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
         x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
         mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006"
+
         
         sharedDoc := this.LoadXML(this.sharedStringsXML)
-
+        
         StringUpper, range, range
 
         chracterElementCheck := this.FindRange(range, rangeOnly:=True)

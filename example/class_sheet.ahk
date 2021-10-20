@@ -488,11 +488,19 @@ class RangeClass extends BaseMethod
             ; make new character Element
             chracterElement := sheetDoc.createNode(1, "c", this.mainns)
             v := sheetDoc.createNode(1, "v", this.mainns)
+
+            if value is integer
+            {
+                v.text := value
+            }
+            else
+            {
+                chracterElement.setAttribute("t", "s")
+                v.text := elemCount
+            }
+            
             chracterElement.setAttribute("r", range)
             chracterElement.appendChild(v)
-
-            if value is not integer
-                chracterElement.setAttribute("t", "s")
 
             RegExMatch(range, "\d+$", rowNumber)
             rowElem := sheetDoc.DocumentElement.selectSingleNode("//main:row[@r='" . rowNumber . "']")
@@ -511,7 +519,6 @@ class RangeClass extends BaseMethod
                 row.appendChild(chracterElement)
 
                 ; append row to sheetdata node
-                ; resTag := this.sheetDataDoc.getElementsByTagName("sheetData")
                 sheetDataElem := sheetDoc.DocumentElement.selectSingleNode("//main:sheetData")
                 sheetDataElem.appendChild(row)
             }

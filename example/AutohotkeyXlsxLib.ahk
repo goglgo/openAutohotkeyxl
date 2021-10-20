@@ -2,6 +2,18 @@
 #Include const.ahk
 
 
+ComparisionWithCOMobj:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+
+timeBefore := A_TickCount
+sheet.Range("B1:B1000").value := "aaa"
+timeElaspe := A_TickCount - timeBefore
+FileAppend, % timeElaspe . "`n", ahkxlResult.txt
+; sheet.Range("C2:C4").value := [["aa"],["bb"],["cc"]]
+Msgbox,% timeElaspe
+xl.save("Ttt.xlsx")
 
 
 return

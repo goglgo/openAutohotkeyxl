@@ -1,4 +1,15 @@
-; #Include nadureXML.ahk
+; xml := ComObjCreate("MSXML2.DOMDocument.6.0")
+
+; xml.Load("sharedStrings.xml")
+; xml.async := false
+; xml.setProperty("SelectionLanguage", "XPath")
+; ns1 := "xmlns:main='http://schemas.openxmlformats.org/spreadsheetml/2006/main'"
+; xml.setProperty("SelectionNamespaces" , ns1)
+
+; Msgbox,% xml.DocumentElement.selectNodes("//main:si").length
+
+; return
+
 
 ; https://docs.microsoft.com/en-us/previous-versions/troubleshoot/msxml/msxml-6-matching-nodes-not-return
 
@@ -17,7 +28,8 @@ xml.setProperty("SelectionNamespaces" , ns)
 
 ; tt := xml.selectNodes( "//row/c[@r='B2']" )
 ; tt := xml.DocumentElement.selectNodes("//main:c")
-ee := xml.DocumentElement.selectSingleNode("//main:c[@r='B4']")
+; ee := xml.DocumentElement.selectSingleNode("//main:c[@r='B4']")
+ee := xml.DocumentElement.selectSingleNode("//main:sheetData")
 ; dd := root.selectSingleNode( "//main:row/main:c[@main:r='B3']/main:v" )
 Msgbox,% ee.xml
 ; MSgbox,% tt.item(1).text

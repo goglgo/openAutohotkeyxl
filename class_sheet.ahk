@@ -247,8 +247,33 @@ class RangeClass extends BaseMethod
         this.sharedStringsXML := sharedStringsXML
         this.params := params
 
+        this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
+        this.x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
+        this.rns := "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ; r:
+        this.mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006" ; mc:
+
+        if not this.sheetDataDoc.childNodes[1].getAttribute("xmlns:x14ac")
+        {
+            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:x14ac", this.x14acns)
+            this.sheetDataDoc.childNodes[1].setAttribute("mc:Ignorable", "x14ac")
+            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:mc", this.mcns)
+        }
         ; if this line. error occurs.
         ; sheet := this.LoadXML(sheetXML)
+    }
+
+    sheetXMLNameSpace
+    {
+        get {
+            x := "xmlns:"
+            nameSpace := format("{1}main='{2}' {1}x14ac='{3}' {1}r='{4}' {1}mc='{5}'"
+                , x
+                , this.mainNs
+                , this.x14acns
+                , this.rns
+                , this.mcns)
+            return nameSpace
+        }
     }
 
 
@@ -325,7 +350,10 @@ class RangeClass extends BaseMethod
                 
                 ; if not multi cell
                 if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = False)
+                {
                     this.WriteCell(this.params[1], value)
+                }
+                    ; this.WriteCell(this.params[1], value)
 
                 ; write whole range with single value
                 if (this.params.length() = 1) and (this.MultiCellCheck(this.params[1]) = True)
@@ -422,27 +450,109 @@ class RangeClass extends BaseMethod
 
         return Trim(columnName)
     }
-    WriteCell_V2(range, value)
-    {
-        ; TODO: for optimizing.
-        x := "xmlns:"
-        mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
-        x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
-        rns := "http://schemas.openxmlformats.org/officeDocument/2006/relationships" ; r:
-        mcns := "http://schemas.openxmlformats.org/markup-compatibility/2006" ; mc:
-        
-        nameSpace := format("{1}main='{2}' {1}x14ac='{3}' {1}r='{4}' {1}mc='{5}'"
-            , x, mainNs, x14acns, rns, mcns)
-
-        sharedDoc := this.LoadXML(this.sharedStringsXML)
-        sheetDoc := this.LoadXML(this.sheetXML)
-        
-        foundSheet := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
-
-        StringUpper, range, range
-    }
 
     WriteCell(range, value)
+    {
+        ; TODO: for optimizing.
+        ; this.sheetXMLNameSpace
+        ; sharedDoc := this.LoadXML(this.sharedStringsXML)
+        sheetDoc := this.LoadXML(this.sheetXML)
+        sheetDoc.setProperty("SelectionLanguage", "XPath")
+        sheetDoc.setProperty("SelectionNamespaces" , this.sheetXMLNameSpace)
+        StringUpper, range, range
+        
+        ; use selectSingleNode method for the performance
+        foundRange := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
+        if value is not integer
+        {
+            elemCount := this.WriteTextToSharedDoc(value)
+        }
+
+        if foundRange ; if Range is
+        {
+            if value is integer
+            {
+                foundRange.removeAttribute("t")
+                foundRange.selectSingleNode("//main:v").text := value
+            }
+            else
+            {
+                ; attribute for string type to "s"
+                foundRange.setAttribute("t", "s")
+                foundRange.selectSingleNode("main:v").text := elemCount
+            }
+        }
+
+        else ; if not 
+        {
+            ; make new character Element
+            chracterElement := sheetDoc.createNode(1, "c", this.mainns)
+            v := sheetDoc.createNode(1, "v", this.mainns)
+            chracterElement.setAttribute("r", range)
+            chracterElement.appendChild(v)
+
+            if value is not integer
+                chracterElement.setAttribute("t", "s")
+
+            RegExMatch(range, "\d+$", rowNumber)
+            rowElem := sheetDoc.DocumentElement.selectSingleNode("//main:row[@r='" . rowNumber . "']")
+
+            if rowElem
+            {
+                ; make row node
+                rowElem.appendChild(chracterElement)
+            }
+            else
+            {
+                row := sheetDoc.createNode(1, "row", this.mainns)
+                row.setAttribute("spans", "")
+                row.setAttribute("r", rowNumber)
+                row.setAttribute("x14ac:dyDescent", 0.3)
+                row.appendChild(chracterElement)
+
+                ; append row to sheetdata node
+                ; resTag := this.sheetDataDoc.getElementsByTagName("sheetData")
+                sheetDataElem := sheetDoc.DocumentElement.selectSingleNode("//main:sheetData")
+                sheetDataElem.appendChild(row)
+            }
+        }
+        sheetDoc.save(this.sheetXML)
+
+    }
+
+    WriteTextToSharedDoc(value)
+    {
+        ; return value : SharedDocStringNumber
+        sharedDoc := this.LoadXML(this.sharedStringsXML)
+
+        si := sharedDoc.createNode(1, "si", this.mainns)
+        t := sharedDoc.createNode(1, "t", this.mainns) ; text
+        phoneticPr := sharedDoc.createNode(1, "phoneticPr", this.mainns) ; text sibling
+        phoneticPr.setAttribute("fontId", "1")
+        phoneticPr.setAttribute("type", "noConversion")
+
+        t.text := value
+        si.appendChild(t), si.appendChild(phoneticPr)
+
+        ; sst := sharedDoc.getElementsByTagName("sst")
+
+        sharedDoc.setProperty("SelectionLanguage", "XPath")
+        sharedDoc.setProperty("SelectionNamespaces" 
+            , Format("xmlns:main='{1}'", this.mainns))
+
+        elemCount := sharedDoc.DocumentElement.selectNodes("//main:si").length
+
+        sst := sharedDoc.DocumentElement.selectSingleNode("//main:sst")
+        
+        count := sst.getAttribute("count")
+        sst.setAttribute("count", count+1)
+        sst.appendChild(si)
+
+        sharedDoc.save(this.sharedStringsXML)
+        return elemCount
+    }
+
+    WriteCell_legacy(range, value)
     {
         ns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         ns2 := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac"
@@ -455,13 +565,6 @@ class RangeClass extends BaseMethod
         StringUpper, range, range
 
         chracterElementCheck := this.FindRange(range, rangeOnly:=True)
-
-        if not this.sheetDataDoc.childNodes[1].getAttribute("xmlns:x14ac")
-        {
-            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:x14ac", x14acns)
-            this.sheetDataDoc.childNodes[1].setAttribute("mc:Ignorable", "x14ac")
-            this.sheetDataDoc.childNodes[1].setAttribute("xmlns:mc", mcns)
-        }
 
         ; Find range at the sheetDataDoc
         ; if exist found.
@@ -533,7 +636,7 @@ class RangeClass extends BaseMethod
                     ; make row node
                     RegExMatch(range, "\d+$", rowNumber)
                     row := sharedDoc.createNode(1, "row", ns)
-                    row.setAttribute("spans", spans)
+                    row.setAttribute("spans", "")
                     row.setAttribute("r", rowNumber)
                     row.setAttribute("x14ac:dyDescent", 0.3)
                     row.appendChild(chracterElement)

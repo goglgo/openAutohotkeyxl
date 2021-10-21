@@ -1,3 +1,61 @@
+
+tt := new NadureClassSetTest()
+
+tt.ta := "asdf"
+Msgbox,% tt.aaa
+
+
+return
+
+class NadureClassSetTest
+{
+    __New()
+    {
+        this.aaa := "asfasd"
+    }
+
+    font {
+        get {
+
+        }
+        set {
+            
+        }
+    }
+}
+
+GetFontList:
+Fonts := GetFontNames(DEFAULT_CHARSET := 1)
+Gui, Add, Edit, w250 h400 hwndhEdit
+for k in Fonts
+   text .= k . "`r`n"
+GuiControl,, Edit1, % text
+Gui, Show,w300, % "Total fonts found: " . Fonts.Count()
+ControlSend,, ^{Home}, ahk_id %hEdit%
+Return
+GuiClose:
+   ExitApp
+
+return
+
+GetFontNames(charset)
+{
+   hDC := DllCall("GetDC", "UInt", 0, "Ptr")
+   VarSetCapacity(LOGFONT, 92, 0)
+   NumPut(charset, &LOGFONT + 23, "UChar")
+   DllCall("EnumFontFamiliesEx", "Ptr", hDC, "Ptr", 0
+                               , "Ptr", RegisterCallback("EnumFontFamExProc", "F", 4)
+                               , "Ptr", pFonts := Object(Fonts := {}), "UInt", 0)
+   ObjRelease(pFonts), DllCall("ReleaseDC", "Ptr", 0, "Ptr", hDC)
+   Return Fonts
+}
+EnumFontFamExProc(lpelfe, lpntme, FontType, lParam)
+{
+   font := StrGet(lpelfe + 28)
+   Object(lParam)[font] := ""
+   Return true
+}
+
 ; xml := ComObjCreate("MSXML2.DOMDocument.6.0")
 
 ; xml.Load("sharedStrings.xml")

@@ -706,4 +706,24 @@ class RangeClass extends BaseMethod
 }
     
 
+class StyleBuilder
+{
+    __New()
+    {
 
+    }
+    class font
+    {
+        __New()
+        {
+            this.is_set := false
+            this.family := 1 ; font-family(i don't know well..)
+            this.sz := "" ; size
+            this.name := "" ; font name
+            this.color := ""
+            this.bold := false ; Bold
+            this.u := false ; underline or "double"
+            this.strike := false ; cancel line
+        }
+    }
+}

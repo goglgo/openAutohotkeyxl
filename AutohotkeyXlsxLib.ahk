@@ -2,13 +2,16 @@
 #Include const.ahk
 
 
+
+return
+
 ComparisionWithCOMobj:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
 
 timeBefore := A_TickCount
-; sheet.Range("B1:B99").value := "aaa"
+; sheet.Range("B1:B1000").value := "aaa"
 sheet.Range("B20").value := "aaa"
 timeElaspe := A_TickCount - timeBefore
 ; FileAppend, % timeElaspe . "`n", ahkxlResult.txt

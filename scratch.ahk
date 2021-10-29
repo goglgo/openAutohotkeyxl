@@ -1,11 +1,18 @@
 
 tt := new NadureClassSetTest()
+assn := new AssingingObj()
 
-tt.ta := "asdf"
-Msgbox,% tt.aaa
+tt.value := assn
 
 
 return
+class AssingingObj
+{
+    __New()
+    {
+        this.value := "zzsdf"
+    }
+}
 
 class NadureClassSetTest
 {
@@ -14,12 +21,12 @@ class NadureClassSetTest
         this.aaa := "asfasd"
     }
 
-    font {
+    value {
         get {
-
+            return "Asdf"
         }
         set {
-            
+            MSgbox,% value.__class
         }
     }
 }

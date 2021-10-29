@@ -704,26 +704,91 @@ class RangeClass extends BaseMethod
         
     }
 }
+
+class StyleXMLBuildTool
+{
+    __New(stylePath)
+    {
+        this.xml := ComObjCreate("MSXML2.DOMDocument.6.0")
+        this.xml.async := false
+        this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        this.xml.Load(stylePath)
+        
+        this.defaultFont := "" ; get this
+
+        Err := this.xml.parseError
+        if Err.reason
+        {
+            msgbox % "Error: " Err.reason . "`n: " . stylePath
+            ExitApp
+        }
+    }
+
+    CreateElement(nodeName)
+    {
+        if nodeName := ""
+            throw, A_ThisFunc . "`nnode name is null."
+        return this.xml.createNode(1, nodeName, this.mainns)
+    }
+
+    SetAttribute(node, key, value)
+    {
+        node.setAttribute(key, value)
+        return node
+    }
+
+    Fill
+    {
+        if value.__class = "FillStyleBuild"
+        {
+
+        }
+    }
+
+    Font
+    {
+        if value.__class = "FontStyleBuild"
+        {
+            
+        }
+    }
+
+   
+}
     
 
-class StyleBuilder
+Font()
 {
-    __New()
-    {
-
-    }
-    class font
+    class FontStyleBuild
     {
         __New()
         {
-            this.is_set := false
-            this.family := 1 ; font-family(i don't know well..)
-            this.sz := "" ; size
-            this.name := "" ; font name
+            this.isFontBuildClass := True
+            this.name := "" ; set default font when assigning.
+            this.size := 11
+            this.Bold := false
             this.color := ""
-            this.bold := false ; Bold
-            this.u := false ; underline or "double"
-            this.strike := false ; cancel line
+            this.family := ""
+            this.underline := "" ; 1. true, 2. "double", 3. blank
+            this.cancelline := "" ; strike
         }
     }
+    return new FontStyleBuild()
+}
+
+Fill()
+{
+    class FillStyleBuild
+    {
+        __New()
+        {
+            this.isFillStyleBuild := True
+            ; i think must be rgb only for simple using.
+            this.Type := "solid"
+            this.fgColor := "" 
+            this.fgColor := ""
+            this.color := ""
+        }
+    }
+    return new FillStyleBuild()
 }

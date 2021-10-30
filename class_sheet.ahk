@@ -224,9 +224,6 @@ class Sheet extends BaseMethod
             return
         }
     }
-
-    
-
 }
 
 ; Range Class
@@ -237,6 +234,10 @@ class RangeClass extends BaseMethod
     ; params : Cell Address
     __New(sheetXML, sharedStringsXML, params*)
     {
+        ; sheetXML - sheet xml path
+        ; sharedStringsXMl - sharedStrings xml path
+        ; params - range object value. if intput is "b2" then key is params[1]
+
         if not FileExist(sheetXML)
             throw, "Can't find sheet.xml file."
 
@@ -246,6 +247,8 @@ class RangeClass extends BaseMethod
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
         this.params := params
+        this.isStyle := False
+        
 
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
         this.x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
@@ -260,6 +263,31 @@ class RangeClass extends BaseMethod
         }
         ; if this line. error occurs.
         ; sheet := this.LoadXML(sheetXML)
+
+        ; Get Style Index if it is.
+        this.styleIndex := this.GetStyleIndex(params[1])
+    }
+
+    style
+    {
+        get {
+            if not this.isStyle
+            {
+                Msgbox, 111
+                this.isStyle := True
+                Msgbox,% this.paths.style
+                return new StyleXMLBuildTool(this.paths.style, this.styleIndex)
+            }
+            else
+            {
+                Msgbox, 22
+                return this.style
+            }
+        }
+
+        ; set {
+
+        ; }
     }
 
     sheetXMLNameSpace
@@ -271,11 +299,10 @@ class RangeClass extends BaseMethod
                 , this.mainNs
                 , this.x14acns
                 , this.rns
-                , this.mcns)
+                , this.mcns )
             return nameSpace
         }
     }
-
 
     value
     {
@@ -449,6 +476,18 @@ class RangeClass extends BaseMethod
         } 
 
         return Trim(columnName)
+    }
+
+    GetStyleIndex(range)
+    {
+        sheetDoc := this.LoadXML(this.sheetXML)
+        sheetDoc.setProperty("SelectionLanguage", "XPath")
+        sheetDoc.setProperty("SelectionNamespaces" , this.sheetXMLNameSpace)
+        StringUpper, range, range
+        
+        ; use selectSingleNode method for the performance
+        foundRange := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
+        return foundRange.getAttribute("s")
     }
 
     WriteCell(range, value)
@@ -707,12 +746,14 @@ class RangeClass extends BaseMethod
 
 class StyleXMLBuildTool
 {
-    __New(stylePath)
+    __New(stylePath, styleIndex)
     {
+        MSgbox,% stylePath
         this.xml := ComObjCreate("MSXML2.DOMDocument.6.0")
         this.xml.async := false
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         this.xml.Load(stylePath)
+        Msgbox,% stylePath . "`n style"
         
         this.defaultFont := "" ; get this
 
@@ -722,6 +763,7 @@ class StyleXMLBuildTool
             msgbox % "Error: " Err.reason . "`n: " . stylePath
             ExitApp
         }
+        Msgbox,11
     }
 
     CreateElement(nodeName)
@@ -737,19 +779,39 @@ class StyleXMLBuildTool
         return node
     }
 
+    GetAttribute(node)
+    {
+        node.getAttribute(key)
+        return node
+    }
+
     Fill
     {
-        if value.__class = "FillStyleBuild"
+        set
         {
+            if value.__class = "FillStyleBuild"
+            {
 
+            }
+            else
+            {
+                throw, "please use Fill function. for building style"
+            }
         }
     }
 
     Font
     {
-        if value.__class = "FontStyleBuild"
+        set
         {
-            
+            if value.__class = "FontStyleBuild"
+            {
+                
+            }
+            else
+            {
+                throw, "please use Font function. for building style"
+            }
         }
     }
 
@@ -759,36 +821,52 @@ class StyleXMLBuildTool
 
 Font()
 {
-    class FontStyleBuild
-    {
-        __New()
-        {
-            this.isFontBuildClass := True
-            this.name := "" ; set default font when assigning.
-            this.size := 11
-            this.Bold := false
-            this.color := ""
-            this.family := ""
-            this.underline := "" ; 1. true, 2. "double", 3. blank
-            this.cancelline := "" ; strike
-        }
-    }
     return new FontStyleBuild()
 }
 
 Fill()
 {
-    class FillStyleBuild
-    {
-        __New()
-        {
-            this.isFillStyleBuild := True
-            ; i think must be rgb only for simple using.
-            this.Type := "solid"
-            this.fgColor := "" 
-            this.fgColor := ""
-            this.color := ""
-        }
-    }
+    
     return new FillStyleBuild()
+}
+
+Border()
+{
+    return new BorderStyleBuild()
+}
+
+class FontStyleBuild
+{
+    __New()
+    {
+        this.isFontBuildClass := True
+        this.name := "" ; set default font when assigning.
+        this.size := 11
+        this.Bold := false
+        this.color := ""
+        this.family := ""
+        this.underline := "" ; 1. true, 2. "double", 3. blank
+        this.cancelline := "" ; strike
+    }
+}
+
+class BorderStyleBuild
+{
+    __New()
+    {
+        
+    }
+}
+
+class FillStyleBuild
+{
+    __New()
+    {
+        this.isFillStyleBuild := True
+        ; i think must be rgb only for simple using.
+        this.Type := "solid"
+        this.fgColor := "" 
+        this.fgColor := ""
+        this.color := ""
+    }
 }

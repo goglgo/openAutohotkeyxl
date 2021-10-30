@@ -2,7 +2,11 @@
 #Include const.ahk
 
 
-
+StyleTest:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+sheet.Range("C7").style
 return
 
 ComparisionWithCOMobj:
@@ -585,6 +589,13 @@ class OpenAhkXl
         {
             get {
                 return this.basePath . "\xl\theme"
+            }
+        }
+
+        style
+        {
+            get {
+                return this.basePath . "\xl\styles.xml"
             }
         }
 

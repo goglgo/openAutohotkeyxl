@@ -1,8 +1,10 @@
 
 tt := new NadureClassSetTest()
-assn := new AssingingObj()
+; assn := new AssingingObj()
 
-tt.value := assn
+tt.koo :="asdf"
+
+Msgbox,% koo
 
 
 return
@@ -12,6 +14,8 @@ class AssingingObj
     {
         this.value := "zzsdf"
     }
+
+
 }
 
 class NadureClassSetTest
@@ -21,12 +25,13 @@ class NadureClassSetTest
         this.aaa := "asfasd"
     }
 
-    value {
+    koo {
         get {
             return "Asdf"
         }
         set {
-            MSgbox,% value.__class
+            MSgbox,% value
+            return value
         }
     }
 }

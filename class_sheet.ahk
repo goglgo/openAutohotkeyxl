@@ -131,6 +131,7 @@ class Sheet extends BaseMethod
             , this.sharedStringsXML, params*)
             
         rangeClass.RangeColumnToNumber := this.RangeColumnToNumber
+        rangeclass.paths := this.paths
         return rangeClass
     }
 
@@ -247,7 +248,7 @@ class RangeClass extends BaseMethod
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
         this.params := params
-        this.isStyle := False
+        this.isStyle := ""
         
 
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
@@ -266,6 +267,7 @@ class RangeClass extends BaseMethod
 
         ; Get Style Index if it is.
         this.styleIndex := this.GetStyleIndex(params[1])
+        ; this.style := new StyleXMLBuildTool(this.paths.style, this.styleIndex)
     }
 
     style
@@ -273,15 +275,15 @@ class RangeClass extends BaseMethod
         get {
             if not this.isStyle
             {
-                Msgbox, 111
-                this.isStyle := True
-                Msgbox,% this.paths.style
-                return new StyleXMLBuildTool(this.paths.style, this.styleIndex)
+                this.isStyle := new StyleXMLBuildTool(this.paths.style
+                    , this.sheetXMLNameSpace
+                    , this.styleIndex)
+                this.isStyle.nameSpace := this.sheetXMLNameSpace
+                return this.isStyle
             }
             else
             {
-                Msgbox, 22
-                return this.style
+                return this.isStyle
             }
         }
 
@@ -746,24 +748,46 @@ class RangeClass extends BaseMethod
 
 class StyleXMLBuildTool
 {
-    __New(stylePath, styleIndex)
+    __New(stylePath, nameSpace, styleIndex)
     {
-        MSgbox,% stylePath
-        this.xml := ComObjCreate("MSXML2.DOMDocument.6.0")
-        this.xml.async := false
+        ; this.nameSpace  - namespace
+        xml := ComObjCreate("MSXML2.DOMDocument.6.0")
+        xml.async := false
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
-        this.xml.Load(stylePath)
-        Msgbox,% stylePath . "`n style"
-        
-        this.defaultFont := "" ; get this
+        xml.Load(stylePath)
 
-        Err := this.xml.parseError
+        xml.setProperty("SelectionLanguage", "XPath")
+        xml.setProperty("SelectionNamespaces" , nameSpace)
+        
+        Err := xml.parseError
         if Err.reason
         {
             msgbox % "Error: " Err.reason . "`n: " . stylePath
             ExitApp
         }
-        Msgbox,11
+
+        this.xml := xml
+
+        this.cellXfs := xml.DocumentElement.selectSingleNode("//cellXfs")
+
+        if styleIndex
+        {
+            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[" . styleIndex . "]")
+        }
+
+        else
+        {
+            ; numFmtId, fontId, fillId, borderId, xfId
+            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
+        }
+        ; for k, v in CellXf.attributes
+        ; {
+        ;     ; Msgbox,% k.nodeName
+        ;     this[k.nodeName] := k.text
+        ; }
+        ; Msgbox,% this.fontId.nodeName
+
+
     }
 
     CreateElement(nodeName)
@@ -787,6 +811,10 @@ class StyleXMLBuildTool
 
     Fill
     {
+        get {
+            fillId := this.CellXf.getAttribute("fillId")
+            this.xml.DocumentElement.selectSingleNode("//main:font[" . fillId . "]")
+        }
         set
         {
             if value.__class = "FillStyleBuild"

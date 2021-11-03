@@ -131,6 +131,8 @@ class Sheet extends BaseMethod
             , this.sharedStringsXML, params*)
             
         rangeClass.RangeColumnToNumber := this.RangeColumnToNumber
+
+        ; for assigning style path
         rangeclass.paths := this.paths
         return rangeClass
     }
@@ -769,10 +771,9 @@ class StyleXMLBuildTool
         this.xml := xml
 
         this.cellXfs := xml.DocumentElement.selectSingleNode("//cellXfs")
-
         if styleIndex
         {
-            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[" . styleIndex . "]")
+            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[" . styleIndex+1 . "]")
         }
 
         else
@@ -813,13 +814,37 @@ class StyleXMLBuildTool
     {
         get {
             fillId := this.CellXf.getAttribute("fillId")
-            this.xml.DocumentElement.selectSingleNode("//main:font[" . fillId . "]")
+            fillXML := this.xml.DocumentElement.selectSingleNode("//main:fill[" . fillId + 1 . "]")
+            patternFill := fillXML.childNodes[0]
+            patternType_ := patternFill.getAttributeNode("patternType")
+            
+            fill := fill()
+
+            fill.patternType := patternType
+            
+            if patternFill.hasChildNodes()
+            {
+                if fgColorRGB := patternFill.childNodes[0].getAttributeNode("rgb")
+                    fill.fgColorRGB_ := fgColorRGB
+
+                if fgColorTheme := patternFill.childNodes[0].getAttributeNode("theme")
+                    fill.fgColorThemes_ := fgColorTheme
+                
+                if fgColortInt := patternFill.childNodes[0].getAttributeNode("tint")
+                    fill.fgColortInts_ := fgColortInt
+
+                if bgcolorIndexed := patternFill.childNodes[1].getAttributeNode("indexed")
+                    fill.bgcolorIndexeds_ := bgcolorIndexed
+            }
+            fill.xml := this.xml
+            return fill
+
         }
         set
         {
             if value.__class = "FillStyleBuild"
             {
-
+                MSgbox, correct
             }
             else
             {
@@ -890,6 +915,10 @@ class FillStyleBuild
 {
     __New()
     {
+        ; Set only Solid Type..
+        ; simple color only..
+        ; need this.xml assigned from caller.
+
         this.isFillStyleBuild := True
         ; i think must be rgb only for simple using.
         this.Type := "solid"
@@ -897,4 +926,7 @@ class FillStyleBuild
         this.fgColor := ""
         this.color := ""
     }
+
+    
+
 }

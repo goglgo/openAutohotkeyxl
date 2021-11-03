@@ -6,7 +6,7 @@ StyleTest:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
-sheet.Range("C7").style
+sheet.Range("C7").style.Fill
 return
 
 ComparisionWithCOMobj:

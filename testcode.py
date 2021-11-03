@@ -2,8 +2,8 @@ import win32com.client
 xml = win32com.client.Dispatch("MSXML2.DOMDocument.6.0")
 # xml = win32com.client.Dispatch("MSXML2.DOMDocument.3.0")
 xml.setProperty("SelectionLanguage", "XPath")
-xml.load("sheet1.xml")
-# xml.load("styles.xml")
+# xml.load("sheet1.xml")
+xml.load("styles.xml")
 
 # xml.setProperty("SelectionNamespaces", "xmlns='http://schemas.openxmlformats.org/spreadsheetml/2006/main'")
 

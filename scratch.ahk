@@ -1,4 +1,14 @@
 
+
+Msgbox1(valB:="asdfasdf")
+return
+
+Msgbox1(valA, valB:="i'm valB")
+{
+    MSgbox,% valB
+}
+
+
 tt := new NadureClassSetTest()
 ; assn := new AssingingObj()
 

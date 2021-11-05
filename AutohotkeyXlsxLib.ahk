@@ -6,8 +6,14 @@ StyleTest:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
-sheet.Range("C7").style.Fill
+fil := Fill()
+fil.rgb := "963232"
+
+sheet.Range("C7").style.Fill := fil
+xl.save("ttt.xlsx")
 return
+
+
 
 ComparisionWithCOMobj:
 xl := new OpenAhkXl()

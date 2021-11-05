@@ -268,7 +268,7 @@ class RangeClass extends BaseMethod
         ; sheet := this.LoadXML(sheetXML)
 
         ; Get Style Index if it is.
-        this.styleIndex := this.GetStyleIndex(params[1])
+        ; this.styleIndex := this.GetStyleIndex(params[1])
         ; this.style := new StyleXMLBuildTool(this.paths.style, this.styleIndex)
     }
 
@@ -277,16 +277,26 @@ class RangeClass extends BaseMethod
         get {
             if not this.isStyle
             {
+                
                 this.isStyle := new StyleXMLBuildTool(this.paths.style
                     , this.sheetXMLNameSpace
-                    , this.styleIndex)
+                    , this.GetRangeForStyle(this.params[1])
+                    , this.sheetXML)
                 this.isStyle.nameSpace := this.sheetXMLNameSpace
+                
                 return this.isStyle
             }
             else
             {
                 return this.isStyle
             }
+
+            ; this.isStyle := new StyleXMLBuildTool(this.paths.style
+            ;     , this.sheetXMLNameSpace
+            ;     , this.styleIndex)
+            ; this.isStyle.nameSpace := this.sheetXMLNameSpace
+            
+            ; return this.isStyle
         }
 
         ; set {
@@ -482,7 +492,7 @@ class RangeClass extends BaseMethod
         return Trim(columnName)
     }
 
-    GetStyleIndex(range)
+    GetRangeForStyle(range)
     {
         sheetDoc := this.LoadXML(this.sheetXML)
         sheetDoc.setProperty("SelectionLanguage", "XPath")
@@ -490,8 +500,37 @@ class RangeClass extends BaseMethod
         StringUpper, range, range
         
         ; use selectSingleNode method for the performance
+        
         foundRange := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
-        return foundRange.getAttribute("s")
+        if foundRange
+            return foundRange
+        else
+        {
+            chracterElement := sheetDoc.createNode(1, "c", this.mainns)
+
+            chracterElement.setAttribute("r", range)
+            RegExMatch(range, "\d+$", rowNumber)
+            rowElem := sheetDoc.DocumentElement.selectSingleNode("//main:row[@r='" . rowNumber . "']")
+
+            if rowElem
+            {
+                ; make row node
+                rowElem.appendChild(chracterElement)
+            }
+            else
+            {
+                row := sheetDoc.createNode(1, "row", this.mainns)
+                row.setAttribute("spans", "")
+                row.setAttribute("r", rowNumber)
+                row.setAttribute("x14ac:dyDescent", 0.3)
+                row.appendChild(chracterElement)
+
+                ; append row to sheetdata node
+                sheetDataElem := sheetDoc.DocumentElement.selectSingleNode("//main:sheetData")
+                sheetDataElem.appendChild(row)
+            }
+            return chracterElement
+        }
     }
 
     WriteCell(range, value)
@@ -750,8 +789,12 @@ class RangeClass extends BaseMethod
 
 class StyleXMLBuildTool
 {
-    __New(stylePath, nameSpace, styleIndex)
+    __New(stylePath, nameSpace, rangeXml, sheetPath)
     {
+        this.stylePath := stylePath
+        this.nameSpace := namespace
+        this.rangeXml := rangeXML
+        this.sheetPath := sheetPath
         ; this.nameSpace  - namespace
         xml := ComObjCreate("MSXML2.DOMDocument.6.0")
         xml.async := false
@@ -759,7 +802,7 @@ class StyleXMLBuildTool
         xml.Load(stylePath)
 
         xml.setProperty("SelectionLanguage", "XPath")
-        xml.setProperty("SelectionNamespaces" , nameSpace)
+        xml.setProperty("SelectionNamespaces" , this.nameSpace)
         
         Err := xml.parseError
         if Err.reason
@@ -770,17 +813,13 @@ class StyleXMLBuildTool
 
         this.xml := xml
 
-        this.cellXfs := xml.DocumentElement.selectSingleNode("//cellXfs")
-        if styleIndex
-        {
-            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[" . styleIndex+1 . "]")
-        }
+        cellXfs := xml.DocumentElement.selectSingleNode("//main:cellXfs")
+        this.cellXfsCount := cellXfs.getAttribute("count")
 
-        else
-        {
-            ; numFmtId, fontId, fillId, borderId, xfId
-            this.CellXf := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
-        }
+        ; numFmtId, fontId, fillId, borderId, xfId
+        cloneNode := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
+        this.CellXf := cellXfs.appendChild(cloneNode)
+        
         ; for k, v in CellXf.attributes
         ; {
         ;     ; Msgbox,% k.nodeName
@@ -790,20 +829,43 @@ class StyleXMLBuildTool
 
 
     }
-
-    CreateElement(nodeName)
+    
+    Save()
     {
-        if nodeName := ""
+        this.rangeXml.setAttribute("s", this.cellXfsCount)
+        this.rangeXml.ownerDocument.save(this.sheetPath)
+        this.xml.save(this.stylePath)
+    }
+
+    ChangeXfAttribute(AttributeName, value)
+    {
+        if value = 0
+        {
+            this.CellXf.removeAttribute("apply" . AttributeName)
+        }
+        else
+        {
+            this.CellXf.setAttribute("apply" . AttributeName, 1)
+        }
+        this.CellXf.setAttribute(AttributeName . "Id", value)
+        this.Save()
+    }
+
+    _CreateElement(nodeName)
+    {
+        if nodeName = ""
             throw, A_ThisFunc . "`nnode name is null."
         return this.xml.createNode(1, nodeName, this.mainns)
     }
 
-    SetAttribute(node, key, value)
+    ; just for viewing
+    _SetAttribute(node, key, value)
     {
         node.setAttribute(key, value)
         return node
     }
 
+    ; just for viewing
     GetAttribute(node)
     {
         node.getAttribute(key)
@@ -812,39 +874,38 @@ class StyleXMLBuildTool
 
     Fill
     {
-        get {
-            fillId := this.CellXf.getAttribute("fillId")
-            fillXML := this.xml.DocumentElement.selectSingleNode("//main:fill[" . fillId + 1 . "]")
-            patternFill := fillXML.childNodes[0]
-            patternType_ := patternFill.getAttributeNode("patternType")
-            
-            fill := fill()
-
-            fill.patternType := patternType
-            
-            if patternFill.hasChildNodes()
-            {
-                if fgColorRGB := patternFill.childNodes[0].getAttributeNode("rgb")
-                    fill.fgColorRGB_ := fgColorRGB
-
-                if fgColorTheme := patternFill.childNodes[0].getAttributeNode("theme")
-                    fill.fgColorThemes_ := fgColorTheme
-                
-                if fgColortInt := patternFill.childNodes[0].getAttributeNode("tint")
-                    fill.fgColortInts_ := fgColortInt
-
-                if bgcolorIndexed := patternFill.childNodes[1].getAttributeNode("indexed")
-                    fill.bgcolorIndexeds_ := bgcolorIndexed
-            }
-            fill.xml := this.xml
-            return fill
-
-        }
         set
         {
-            if value.__class = "FillStyleBuild"
+            if value = ""
             {
-                MSgbox, correct
+                this.ChangeXfAttribute("fill", 0)
+            }
+            else if value.__class = "FillStyleBuild"
+            {
+                ; rgb set only
+                fills := this.xml.DocumentElement.selectSingleNode("//main:fills")
+                fillsCount := fills.getAttribute("count")
+                
+                fill := this._CreateElement("fill")
+                patternFill := this._CreateElement("patternFill")
+                patternFill.setAttribute("patternType", "solid")
+
+                fgColor := this._CreateElement("fgColor")
+                fgColor.setAttribute("rgb", value.rgb)
+
+                bgColor := this._CreateElement("bgColor")
+                bgColor.setAttribute("indexed", 64)
+
+                patternFill.appendChild(fgColor)
+                patternFill.appendChild(bgColor)
+
+                fill.appendChild(patternFill)
+                fills.appendChild(fill)
+                fills.setAttribute("count", fillsCount + 1)
+
+                fills.ownerDocument.save(this.stylePath)
+
+                this.ChangeXfAttribute("fill", fillsCount)
             }
             else
             {
@@ -917,16 +978,46 @@ class FillStyleBuild
     {
         ; Set only Solid Type..
         ; simple color only..
-        ; need this.xml assigned from caller.
+        this.rgb := ""
+        this.bgCoilorIndexed := 64
 
-        this.isFillStyleBuild := True
-        ; i think must be rgb only for simple using.
-        this.Type := "solid"
-        this.fgColor := "" 
-        this.fgColor := ""
-        this.color := ""
     }
 
     
 
 }
+
+
+/*
+Fill
+    {
+        get {
+            fillId := this.CellXf.getAttribute("fillId")
+            fillXML := this.xml.DocumentElement.selectSingleNode("//main:fill[" . fillId + 1 . "]")
+            patternFill := fillXML.childNodes[0]
+            patternType_ := patternFill.getAttributeNode("patternType")
+            
+            fill := fill()
+
+            fill.patternType := patternType
+            
+            if patternFill.hasChildNodes()
+            {
+                if fgColorRGB := patternFill.childNodes[0].getAttributeNode("rgb")
+                    fill.fgColorRGB_ := fgColorRGB
+
+                if fgColorTheme := patternFill.childNodes[0].getAttributeNode("theme")
+                    fill.fgColorThemes_ := fgColorTheme
+                
+                if fgColortInt := patternFill.childNodes[0].getAttributeNode("tint")
+                    fill.fgColortInts_ := fgColortInt
+
+                if bgcolorIndexed := patternFill.childNodes[1].getAttributeNode("indexed")
+                    fill.bgcolorIndexeds_ := bgcolorIndexed
+            }
+            fill.xml := this.xml
+            return fill
+
+        }
+
+*/

@@ -6,10 +6,13 @@ StyleTest:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
-fil := Fill()
-fil.rgb := "963232"
+; fil := Fill()
+; fil.rgb := "963232"
+; sheet.Range("C7").style.Fill := fil
 
-sheet.Range("C7").style.Fill := fil
+fontt := Font()
+sheet.Range("C7").style.Font := fontt
+
 xl.save("ttt.xlsx")
 return
 

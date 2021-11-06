@@ -1,50 +1,32 @@
 
-
-Msgbox1(valB:="asdfasdf")
-return
-
-Msgbox1(valA, valB:="i'm valB")
-{
-    MSgbox,% valB
-}
-
-
-tt := new NadureClassSetTest()
-; assn := new AssingingObj()
-
-tt.koo :="asdf"
-
-Msgbox,% koo
+tt := "False"
+if tt is Integer
+    msgbox,% tt
 
 
 return
-class AssingingObj
+
+
+tt := new TestB()
+
+return
+
+class TestB extends TestA
 {
     __New()
     {
-        this.value := "zzsdf"
+        Msgbox, 22
     }
-
-
 }
 
-class NadureClassSetTest
+class TestA
 {
     __New()
     {
-        this.aaa := "asfasd"
-    }
-
-    koo {
-        get {
-            return "Asdf"
-        }
-        set {
-            MSgbox,% value
-            return value
-        }
+        MSgbox, 11
     }
 }
+
 
 GetFontList:
 Fonts := GetFontNames(DEFAULT_CHARSET := 1)

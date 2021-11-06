@@ -514,11 +514,11 @@ class RangeClass extends BaseMethod
 
             if rowElem
             {
-                ; make row node
                 rowElem.appendChild(chracterElement)
             }
             else
             {
+                ; make row node
                 row := sheetDoc.createNode(1, "row", this.mainns)
                 row.setAttribute("spans", "")
                 row.setAttribute("r", rowNumber)
@@ -787,6 +787,8 @@ class RangeClass extends BaseMethod
     }
 }
 
+
+
 class StyleXMLBuildTool
 {
     __New(stylePath, nameSpace, rangeXml, sheetPath)
@@ -819,20 +821,10 @@ class StyleXMLBuildTool
         ; numFmtId, fontId, fillId, borderId, xfId
         cloneNode := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
         this.CellXf := cellXfs.appendChild(cloneNode)
-        
-        ; for k, v in CellXf.attributes
-        ; {
-        ;     ; Msgbox,% k.nodeName
-        ;     this[k.nodeName] := k.text
-        ; }
-        ; Msgbox,% this.fontId.nodeName
-
-
     }
     
     Save()
     {
-        this.rangeXml.setAttribute("s", this.cellXfsCount)
         this.rangeXml.ownerDocument.save(this.sheetPath)
         this.xml.save(this.stylePath)
     }
@@ -846,6 +838,7 @@ class StyleXMLBuildTool
         else
         {
             this.CellXf.setAttribute("apply" . AttributeName, 1)
+            this.rangeXml.setAttribute("s", this.cellXfsCount)
         }
         this.CellXf.setAttribute(AttributeName . "Id", value)
         this.Save()
@@ -918,14 +911,54 @@ class StyleXMLBuildTool
     {
         set
         {
-            if value.__class = "FontStyleBuild"
+            if value = ""
             {
+                this.ChangeXfAttribute("font", 0)
+            }
+            else if value.__class = "FontStyleBuild"
+            {
+                ; rgb set only
+                fonts := this.xml.DocumentElement.selectSingleNode("//main:fonts")
+                fontsCount := fonts.getAttribute("count")
                 
+                font := xml.DocumentElement.selectSingleNode("//main:fonts/main:font[1]").cloneNode(true)
+
+                ; font sub nodes below
+                for k, v in value.options
+                {
+                    ; value[v]
+                    ; v > nodeName
+                    if value[v]
+                    {
+                        node := this._CreateElement(v)
+                        if (value[v] is integer) and (value[v] < 2)
+                        {
+                            
+                        }
+                        if (value[v] )
+                        {
+                            node.setAttribute("val", value[v])
+                        }
+                        fonts.appendChild(node)
+                    }
+
+                }
+                ; color doing seprately
+                throw, "stop!!"
+                ; 
+
+                fonts.appendChild(fill)
+                fonts.setAttribute("count", fontsCount + 1)
+
+                fonts.ownerDocument.save(this.stylePath)
+
+                this.ChangeXfAttribute("font", fontsCount)
             }
             else
             {
                 throw, "please use Font function. for building style"
             }
+
         }
     }
 
@@ -953,14 +986,24 @@ class FontStyleBuild
 {
     __New()
     {
-        this.isFontBuildClass := True
-        this.name := "" ; set default font when assigning.
-        this.size := 11
-        this.Bold := false
+        this.fontName := "" ; set default font when assigning.
+        this.fontSize := ""
         this.color := ""
         this.family := ""
-        this.underline := "" ; 1. true, 2. "double", 3. blank
-        this.cancelline := "" ; strike
+        this.underline := "" ; 1. true, 2. "double", 3. ""
+        this.Bold := false
+        this.Italic := false
+        this.Strike := false
+        this.Shadow := false
+        this.Outline := false
+
+        this.sz := this.fontSize
+        this.name := this.fontName
+        
+        this.options := Array()
+        this.options := ["sz", "name", "family"
+            , "Bold", "Italic", "Strike", "Shadow", "Outline"]
+        
     }
 }
 
@@ -1020,4 +1063,15 @@ Fill
 
         }
 
+*/
+
+
+/*
+; how to returning node names.
+; for k, v in CellXf.attributes
+; {
+;     ; Msgbox,% k.nodeName
+;     this[k.nodeName] := k.text
+; }
+; Msgbox,% this.fontId.nodeName
 */

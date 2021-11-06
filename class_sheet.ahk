@@ -992,14 +992,92 @@ class StyleXMLBuildTool
         {
             if value = ""
             {
-                this.ChangeXfAttribute("font", 0)
+                this.ChangeXfAttribute("border", 0)
             }
             else if value.__class = "BorderStyleBuild"
             {
                 borders := this.xml.DocumentElement.selectSingleNode("//main:borders")
-                bordersCount := fonts.getAttribute("count")
+                bordersCount := borders.getAttribute("count")
                 
                 border := this.xml.DocumentElement.selectSingleNode("//main:border[1]").cloneNode(true)
+                value.StyleCheck()
+                if value.left["style"]
+                {
+                    left := border.selectSingleNode("main:left")
+                    left.setAttribute("style", value.left["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.left["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.left["color"])
+                    }
+                    left.appendChild(color)
+                }
+
+                if value.right["style"]
+                {
+                    right := border.selectSingleNode("main:right")
+                    right.setAttribute("style", value.right["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.right["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.right["color"])
+                    }
+                    right.appendChild(color)
+                }
+
+                if value.top["style"]
+                {
+                    top := border.selectSingleNode("main:top")
+                    top.setAttribute("style", value.top["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.top["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.top["color"])
+                    }
+                    top.appendChild(color)
+                }
+
+                if value.bottom["style"]
+                {
+                    bottom := border.selectSingleNode("main:bottom")
+                    bottom.setAttribute("style", value.bottom["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.bottom["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.bottom["color"])
+                    }
+                    bottom.appendChild(color)
+                }
+
+                borders.appendChild(border)
+                borders.setAttribute("count", bordersCount + 1)
+
+                borders.ownerDocument.save(this.stylePath)
+                MSgbox,% this.CellXf.xml
+                this.ChangeXfAttribute("border", bordersCount)
+                MSgbox,% this.CellXf.xml
+
+                
             }
         }
     }
@@ -1049,6 +1127,50 @@ class BorderStyleBuild
 {
     __New()
     {
+        ; style - thin, thick, medium, dotted
+        ; color - indexed=64(black default) or rgb=000000
+        this.availableStyle := "thin|thick|medium|dotted"
+
+        this.left := Array(), this.right := Array()
+        this.top := Array(), this.bottom := Array()
+        
+        this.left["style"] := "", this.right["style"] := ""
+        this.top["style"] := "", this.bottom["style"] := ""
+
+        this.left["color"] := "", this.right["color"] := ""
+        this.top["color"] := "", this.bottom["color"] := ""
+
+    }
+
+    StyleCheck()
+    {   
+        if this.left["style"]
+        {
+            if not InStr(this.availableStyle, this.left["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.left["style"]
+        }
+        
+        if this.right["style"]
+        {
+            if not InStr(this.availableStyle, this.right["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.right["style"]
+        }
+        
+        if this.top["style"]
+        {
+            if not InStr(this.availableStyle, this.top["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.top["style"]
+        }
+
+        if this.bottom["style"]
+        {
+            if not InStr(this.availableStyle, this.bottom["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.bottom["style"]
+        }
         
     }
 }

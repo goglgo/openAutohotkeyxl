@@ -1,8 +1,6 @@
-
-tt := "False"
-if tt is Integer
-    msgbox,% tt
-
+a:= "asdf|bbbb"
+if not InStr(a, "fff")
+    Msgbox, 11
 
 return
 

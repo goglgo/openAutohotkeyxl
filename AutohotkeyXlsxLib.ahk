@@ -11,6 +11,9 @@ sheet := xl.GetSheetBySheetNo(1)
 ; sheet.Range("C7").style.Fill := fil
 
 fontt := Font()
+fontt.color := "0000000"
+fontt.fontSize := 15
+fontt.Bold := True
 sheet.Range("C7").style.Font := fontt
 
 xl.save("ttt.xlsx")

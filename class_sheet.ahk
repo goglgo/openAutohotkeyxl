@@ -921,37 +921,62 @@ class StyleXMLBuildTool
                 fonts := this.xml.DocumentElement.selectSingleNode("//main:fonts")
                 fontsCount := fonts.getAttribute("count")
                 
-                font := xml.DocumentElement.selectSingleNode("//main:fonts/main:font[1]").cloneNode(true)
-
+                font := this.xml.DocumentElement.selectSingleNode("//main:font[1]").cloneNode(true)
                 ; font sub nodes below
-                for k, v in value.options
+                
+                if value.fontSize
                 {
-                    ; value[v]
-                    ; v > nodeName
-                    if value[v]
-                    {
-                        node := this._CreateElement(v)
-                        if (value[v] is integer) and (value[v] < 2)
-                        {
-                            
-                        }
-                        if (value[v] )
-                        {
-                            node.setAttribute("val", value[v])
-                        }
-                        fonts.appendChild(node)
-                    }
+                    sz := font.selectSingleNode("main:sz")
+                    sz.setAttribute("val", value.fontSize)
+                }
 
+                if value.fontName
+                {
+                    fontName := font.selectSingleNode("main:name")
+                    fontName.setAttribute("val", value.fontName)
+                }
+
+                if value.Bold
+                {
+                    Bold := this._CreateElement("b")
+                    font.appendChild(Bold)
+                }
+
+                if value.strike
+                {
+                    strike := this._CreateElement("strike")
+                    font.appendChild(strike)
+                }
+
+                if value.underline
+                {
+                    underline := this._CreateElement("u")
+                    if value.underline = "double"
+                        underline.setAttribute("val", "double")
+                    font.appendChild(underline)
+                }
+
+                color := font.selectSingleNode("main:color")
+                if value.color
+                {
+                    color.removeAttribute("theme")
+                    color.setAttribute("rgb", value.color)
+                }
+                Else
+                {
+                    if value.color = 0
+                    {
+                        color.removeAttribute("theme")
+                        color.setAttribute("rgb", "000000")
+                    }
                 }
                 ; color doing seprately
-                throw, "stop!!"
                 ; 
 
-                fonts.appendChild(fill)
+                fonts.appendChild(font)
                 fonts.setAttribute("count", fontsCount + 1)
 
                 fonts.ownerDocument.save(this.stylePath)
-
                 this.ChangeXfAttribute("font", fontsCount)
             }
             else
@@ -959,6 +984,23 @@ class StyleXMLBuildTool
                 throw, "please use Font function. for building style"
             }
 
+        }
+    }
+
+    Border {
+        set
+        {
+            if value = ""
+            {
+                this.ChangeXfAttribute("font", 0)
+            }
+            else if value.__class = "BorderStyleBuild"
+            {
+                borders := this.xml.DocumentElement.selectSingleNode("//main:borders")
+                bordersCount := fonts.getAttribute("count")
+                
+                border := this.xml.DocumentElement.selectSingleNode("//main:border[1]").cloneNode(true)
+            }
         }
     }
 
@@ -999,11 +1041,7 @@ class FontStyleBuild
 
         this.sz := this.fontSize
         this.name := this.fontName
-        
-        this.options := Array()
-        this.options := ["sz", "name", "family"
-            , "Bold", "Italic", "Strike", "Shadow", "Outline"]
-        
+        this.b := this.Bold
     }
 }
 

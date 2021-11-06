@@ -20,8 +20,9 @@ sheet.Range("C8").style.Font := fontt
 bborder := Border()
 bborder.left["style"] := "thick"
 bborder.right["style"] := "thick"
-bborder.bottom["style"] := "dotted"
-bborder.bottom["color"] := "FFFF33"
+bborder.bottom["style"] := "thick"
+bborder.top["style"] := "thick"
+; bborder.bottom["color"] := "FFFF33"
 
 ; add style
 sheet.Range("C9").style.Border := bborder

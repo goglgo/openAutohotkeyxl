@@ -115,7 +115,7 @@ class Sheet extends BaseMethod
 
         if not FileExist(sharedStringsXML)
             throw, "Can't find sharedStrings.xml file."
-
+        this._range := Array()
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
 
@@ -127,6 +127,9 @@ class Sheet extends BaseMethod
         if this.isThisSheetDeleted
             throw, "This sheet is already deleted."
 
+        if this._range[params[1]]
+            return this._range[params[1]]
+
         rangeClass := new RangeClass(this.sheetXML
             , this.sharedStringsXML, params*)
             
@@ -134,6 +137,8 @@ class Sheet extends BaseMethod
 
         ; for assigning style path
         rangeclass.paths := this.paths
+
+        this._range[params[1]] := rangeclass
         return rangeClass
     }
 
@@ -270,13 +275,20 @@ class RangeClass extends BaseMethod
     style
     {
         get {
-            this.isStyle := new StyleXMLBuildTool(this.paths.style
-                , this.sheetXMLNameSpace
-                , this.GetRangeForStyle(this.params[1])
-                , this.sheetXML)
-            this.isStyle.nameSpace := this.sheetXMLNameSpace
-            
-            return this.isStyle
+            if this.isStyle
+            {
+                return this.isStyle
+            }
+            else
+            {
+                this.isStyle := new StyleXMLBuildTool(this.paths.style
+                    , this.sheetXMLNameSpace
+                    , this.GetRangeForStyle(this.params[1])
+                    , this.sheetXML)
+                this.isStyle.nameSpace := this.sheetXMLNameSpace
+                
+                return this.isStyle
+            }
 
         }
 
@@ -779,11 +791,12 @@ class StyleXMLBuildTool
         this.rangeXml := rangeXML
         this.sheetPath := sheetPath
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        this.prevCellXfNo := ""
         
         ; this.nameSpace  - namespace
         xml := ComObjCreate("MSXML2.DOMDocument.6.0")
         xml.async := false
-        xml.Load(stylePath)
+        xml.Load(this.stylePath)
 
         xml.setProperty("SelectionLanguage", "XPath")
         xml.setProperty("SelectionNamespaces" , this.nameSpace)
@@ -791,7 +804,7 @@ class StyleXMLBuildTool
         Err := xml.parseError
         if Err.reason
         {
-            msgbox % "Error: " Err.reason . "`n: " . stylePath
+            msgbox % "Error: " Err.reason . "`n: " . this.stylePath
             ExitApp
         }
 
@@ -805,11 +818,49 @@ class StyleXMLBuildTool
         this.CellXf := this.cellXfs.appendChild(cloneNode)
     }
     
+    loadStyleXML()
+    {
+        xml := ComObjCreate("MSXML2.DOMDocument.6.0")
+        xml.async := false
+        xml.Load(this.stylePath)
+
+        xml.setProperty("SelectionLanguage", "XPath")
+        xml.setProperty("SelectionNamespaces" , this.nameSpace)
+        
+        Err := xml.parseError
+        if Err.reason
+        {
+            msgbox % "Error: " Err.reason . "`n: " . this.stylePath
+            ExitApp
+        }
+
+        return xml
+    }
+
+    ReloadXMLAndElement()
+    {
+        if this.prevCellXfNo
+        {
+            this.xml := this.loadStyleXML()
+            this.cellXfs := this.xml.DocumentElement.selectSingleNode("//main:cellXfs")
+            this.cellXf := this.cellXfs.childNodes.item(this.prevCellXfNo)
+            this.cellXfsCount := this.prevCellXfNo
+        }
+    }
+    
     Save()
     {
-        this.rangeXml.ownerDocument.save(this.sheetPath)
-        this.cellXfs.setAttribute("count", this.cellXfsCount+1)
-        this.xml.save(this.stylePath)
+        if not this.prevCellXfNo
+        {
+            this.rangeXml.ownerDocument.save(this.sheetPath)
+            this.cellXfs.setAttribute("count", this.cellXfsCount+1)
+            this.prevCellXfNo := this.cellXfsCount
+            this.xml.save(this.stylePath)
+        }
+        else
+        {
+            this.xml.save(this.stylePath)
+        }
     }
 
     ChangeXfAttribute(AttributeName, value)
@@ -821,7 +872,8 @@ class StyleXMLBuildTool
         else
         {
             this.CellXf.setAttribute("apply" . AttributeName, 1)
-            this.rangeXml.setAttribute("s", this.cellXfsCount)
+            if not this.prevCellXfNo
+                this.rangeXml.setAttribute("s", this.cellXfsCount)
         }
         this.CellXf.setAttribute(AttributeName . "Id", value)
         this.Save()
@@ -858,6 +910,7 @@ class StyleXMLBuildTool
             }
             else if value.__class = "FillStyleBuild"
             {
+                this.ReloadXMLAndElement()
                 ; rgb set only
                 fills := this.xml.DocumentElement.selectSingleNode("//main:fills")
                 fillsCount := fills.getAttribute("count")
@@ -879,7 +932,8 @@ class StyleXMLBuildTool
                 fills.appendChild(fill)
                 fills.setAttribute("count", fillsCount + 1)
 
-                fills.ownerDocument.save(this.stylePath)
+                ; fills.ownerDocument.save(this.stylePath)
+                this.xml.save(this.stylePath)
 
                 this.ChangeXfAttribute("fill", fillsCount)
             }
@@ -900,6 +954,7 @@ class StyleXMLBuildTool
             }
             else if value.__class = "FontStyleBuild"
             {
+                this.ReloadXMLAndElement()
                 ; rgb set only
                 fonts := this.xml.DocumentElement.selectSingleNode("//main:fonts")
                 fontsCount := fonts.getAttribute("count")
@@ -957,7 +1012,8 @@ class StyleXMLBuildTool
                 fonts.appendChild(font)
                 fonts.setAttribute("count", fontsCount + 1)
 
-                fonts.ownerDocument.save(this.stylePath)
+                ; fonts.ownerDocument.save(this.stylePath)
+                this.xml.save(this.stylePath)
                 this.ChangeXfAttribute("font", fontsCount)
             }
             else
@@ -977,6 +1033,7 @@ class StyleXMLBuildTool
             }
             else if value.__class = "BorderStyleBuild"
             {
+                this.ReloadXMLAndElement()
                 borders := this.xml.DocumentElement.selectSingleNode("//main:borders")
                 bordersCount := borders.getAttribute("count")
                 
@@ -1053,7 +1110,8 @@ class StyleXMLBuildTool
                 borders.appendChild(border)
                 borders.setAttribute("count", bordersCount + 1)
 
-                borders.ownerDocument.save(this.stylePath)
+                ; borders.ownerDocument.save(this.stylePath)
+                this.xml.save(this.stylePath)
                 this.ChangeXfAttribute("border", bordersCount)
 
                 

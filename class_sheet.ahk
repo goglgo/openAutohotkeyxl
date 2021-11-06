@@ -264,39 +264,20 @@ class RangeClass extends BaseMethod
             this.sheetDataDoc.childNodes[1].setAttribute("mc:Ignorable", "x14ac")
             this.sheetDataDoc.childNodes[1].setAttribute("xmlns:mc", this.mcns)
         }
-        ; if this line. error occurs.
-        ; sheet := this.LoadXML(sheetXML)
 
-        ; Get Style Index if it is.
-        ; this.styleIndex := this.GetStyleIndex(params[1])
-        ; this.style := new StyleXMLBuildTool(this.paths.style, this.styleIndex)
     }
 
     style
     {
         get {
-            if not this.isStyle
-            {
-                
-                this.isStyle := new StyleXMLBuildTool(this.paths.style
-                    , this.sheetXMLNameSpace
-                    , this.GetRangeForStyle(this.params[1])
-                    , this.sheetXML)
-                this.isStyle.nameSpace := this.sheetXMLNameSpace
-                
-                return this.isStyle
-            }
-            else
-            {
-                return this.isStyle
-            }
-
-            ; this.isStyle := new StyleXMLBuildTool(this.paths.style
-            ;     , this.sheetXMLNameSpace
-            ;     , this.styleIndex)
-            ; this.isStyle.nameSpace := this.sheetXMLNameSpace
+            this.isStyle := new StyleXMLBuildTool(this.paths.style
+                , this.sheetXMLNameSpace
+                , this.GetRangeForStyle(this.params[1])
+                , this.sheetXML)
+            this.isStyle.nameSpace := this.sheetXMLNameSpace
             
-            ; return this.isStyle
+            return this.isStyle
+
         }
 
         ; set {
@@ -797,10 +778,11 @@ class StyleXMLBuildTool
         this.nameSpace := namespace
         this.rangeXml := rangeXML
         this.sheetPath := sheetPath
+        this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        
         ; this.nameSpace  - namespace
         xml := ComObjCreate("MSXML2.DOMDocument.6.0")
         xml.async := false
-        this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
         xml.Load(stylePath)
 
         xml.setProperty("SelectionLanguage", "XPath")
@@ -815,17 +797,18 @@ class StyleXMLBuildTool
 
         this.xml := xml
 
-        cellXfs := xml.DocumentElement.selectSingleNode("//main:cellXfs")
-        this.cellXfsCount := cellXfs.getAttribute("count")
+        this.cellXfs := xml.DocumentElement.selectSingleNode("//main:cellXfs")
+        this.cellXfsCount := this.cellXfs.getAttribute("count")
 
         ; numFmtId, fontId, fillId, borderId, xfId
         cloneNode := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
-        this.CellXf := cellXfs.appendChild(cloneNode)
+        this.CellXf := this.cellXfs.appendChild(cloneNode)
     }
     
     Save()
     {
         this.rangeXml.ownerDocument.save(this.sheetPath)
+        this.cellXfs.setAttribute("count", this.cellXfsCount+1)
         this.xml.save(this.stylePath)
     }
 
@@ -970,8 +953,6 @@ class StyleXMLBuildTool
                         color.setAttribute("rgb", "000000")
                     }
                 }
-                ; color doing seprately
-                ; 
 
                 fonts.appendChild(font)
                 fonts.setAttribute("count", fontsCount + 1)
@@ -1073,9 +1054,7 @@ class StyleXMLBuildTool
                 borders.setAttribute("count", bordersCount + 1)
 
                 borders.ownerDocument.save(this.stylePath)
-                MSgbox,% this.CellXf.xml
                 this.ChangeXfAttribute("border", bordersCount)
-                MSgbox,% this.CellXf.xml
 
                 
             }

@@ -6,23 +6,23 @@ StyleTest:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
-; fil := Fill()
-; fil.rgb := "963232"
-; sheet.Range("C7").style.Fill := fil
 
-; fontt := Font()
-; fontt.color := "0000000"
-; fontt.fontSize := 15
-; fontt.Bold := True
-; sheet.Range("C7").style.Font := fontt
+fil := Fill()
+fil.rgb := "963232"
+sheet.Range("C7").style.Fill := fil
 
-; bborder := Border()
-; bborder.left["style"] := "thick"
-; bborder.right["style"] := "thick"
-; bborder.bottom["style"] := "dotted"
-; bborder.bottom["color"] := "FFFF33"
-; sheet.Range("C7").style.Border := bborder
+fontt := Font()
+fontt.color := "0000000"
+fontt.fontSize := 15
+fontt.Bold := True
+sheet.Range("C8").style.Font := fontt
 
+bborder := Border()
+bborder.left["style"] := "thick"
+bborder.right["style"] := "thick"
+bborder.bottom["style"] := "dotted"
+bborder.bottom["color"] := "FFFF33"
+sheet.Range("C9").style.Border := bborder
 
 xl.save("ttt.xlsx")
 return

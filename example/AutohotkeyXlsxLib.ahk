@@ -2,13 +2,40 @@
 #Include const.ahk
 
 
+StyleTest:
+xl := new OpenAhkXl()
+xl.open("aaaa.xlsx")
+sheet := xl.GetSheetBySheetNo(1)
+
+fil := Fill()
+fil.rgb := "963232"
+sheet.Range("C7").style.Fill := fil
+
+fontt := Font()
+fontt.color := "0000000"
+fontt.fontSize := 15
+fontt.Bold := True
+sheet.Range("C8").style.Font := fontt
+
+bborder := Border()
+bborder.left["style"] := "thick"
+bborder.right["style"] := "thick"
+bborder.bottom["style"] := "dotted"
+bborder.bottom["color"] := "FFFF33"
+sheet.Range("C9").style.Border := bborder
+
+xl.save("ttt.xlsx")
+return
+
+
+
 ComparisionWithCOMobj:
 xl := new OpenAhkXl()
 xl.open("aaaa.xlsx")
 sheet := xl.GetSheetBySheetNo(1)
 
 timeBefore := A_TickCount
-; sheet.Range("B1:B99").value := "aaa"
+; sheet.Range("B1:B1000").value := "aaa"
 sheet.Range("B20").value := "aaa"
 timeElaspe := A_TickCount - timeBefore
 ; FileAppend, % timeElaspe . "`n", ahkxlResult.txt
@@ -582,6 +609,13 @@ class OpenAhkXl
         {
             get {
                 return this.basePath . "\xl\theme"
+            }
+        }
+
+        style
+        {
+            get {
+                return this.basePath . "\xl\styles.xml"
             }
         }
 

@@ -22,7 +22,10 @@ bborder.left["style"] := "thick"
 bborder.right["style"] := "thick"
 bborder.bottom["style"] := "dotted"
 bborder.bottom["color"] := "FFFF33"
+
+; add style
 sheet.Range("C9").style.Border := bborder
+sheet.Range("C7").style.Font := fontt
 
 xl.save("ttt.xlsx")
 return

@@ -131,6 +131,9 @@ class Sheet extends BaseMethod
             , this.sharedStringsXML, params*)
             
         rangeClass.RangeColumnToNumber := this.RangeColumnToNumber
+
+        ; for assigning style path
+        rangeclass.paths := this.paths
         return rangeClass
     }
 
@@ -224,9 +227,6 @@ class Sheet extends BaseMethod
             return
         }
     }
-
-    
-
 }
 
 ; Range Class
@@ -237,6 +237,10 @@ class RangeClass extends BaseMethod
     ; params : Cell Address
     __New(sheetXML, sharedStringsXML, params*)
     {
+        ; sheetXML - sheet xml path
+        ; sharedStringsXMl - sharedStrings xml path
+        ; params - range object value. if intput is "b2" then key is params[1]
+
         if not FileExist(sheetXML)
             throw, "Can't find sheet.xml file."
 
@@ -246,6 +250,8 @@ class RangeClass extends BaseMethod
         this.sheetXML := sheetXML
         this.sharedStringsXML := sharedStringsXML
         this.params := params
+        this.isStyle := ""
+        
 
         this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main" ; main:
         this.x14acns := "http://schemas.microsoft.com/office/spreadsheetml/2009/9/ac" ; x14ac:
@@ -258,8 +264,25 @@ class RangeClass extends BaseMethod
             this.sheetDataDoc.childNodes[1].setAttribute("mc:Ignorable", "x14ac")
             this.sheetDataDoc.childNodes[1].setAttribute("xmlns:mc", this.mcns)
         }
-        ; if this line. error occurs.
-        ; sheet := this.LoadXML(sheetXML)
+
+    }
+
+    style
+    {
+        get {
+            this.isStyle := new StyleXMLBuildTool(this.paths.style
+                , this.sheetXMLNameSpace
+                , this.GetRangeForStyle(this.params[1])
+                , this.sheetXML)
+            this.isStyle.nameSpace := this.sheetXMLNameSpace
+            
+            return this.isStyle
+
+        }
+
+        ; set {
+
+        ; }
     }
 
     sheetXMLNameSpace
@@ -271,11 +294,10 @@ class RangeClass extends BaseMethod
                 , this.mainNs
                 , this.x14acns
                 , this.rns
-                , this.mcns)
+                , this.mcns )
             return nameSpace
         }
     }
-
 
     value
     {
@@ -449,6 +471,47 @@ class RangeClass extends BaseMethod
         } 
 
         return Trim(columnName)
+    }
+
+    GetRangeForStyle(range)
+    {
+        sheetDoc := this.LoadXML(this.sheetXML)
+        sheetDoc.setProperty("SelectionLanguage", "XPath")
+        sheetDoc.setProperty("SelectionNamespaces" , this.sheetXMLNameSpace)
+        StringUpper, range, range
+        
+        ; use selectSingleNode method for the performance
+        
+        foundRange := sheetDoc.DocumentElement.selectSingleNode("//main:c[@r='" . range . "']")
+        if foundRange
+            return foundRange
+        else
+        {
+            chracterElement := sheetDoc.createNode(1, "c", this.mainns)
+
+            chracterElement.setAttribute("r", range)
+            RegExMatch(range, "\d+$", rowNumber)
+            rowElem := sheetDoc.DocumentElement.selectSingleNode("//main:row[@r='" . rowNumber . "']")
+
+            if rowElem
+            {
+                rowElem.appendChild(chracterElement)
+            }
+            else
+            {
+                ; make row node
+                row := sheetDoc.createNode(1, "row", this.mainns)
+                row.setAttribute("spans", "")
+                row.setAttribute("r", rowNumber)
+                row.setAttribute("x14ac:dyDescent", 0.3)
+                row.appendChild(chracterElement)
+
+                ; append row to sheetdata node
+                sheetDataElem := sheetDoc.DocumentElement.selectSingleNode("//main:sheetData")
+                sheetDataElem.appendChild(row)
+            }
+            return chracterElement
+        }
     }
 
     WriteCell(range, value)
@@ -704,6 +767,450 @@ class RangeClass extends BaseMethod
         
     }
 }
+
+
+
+class StyleXMLBuildTool
+{
+    __New(stylePath, nameSpace, rangeXml, sheetPath)
+    {
+        this.stylePath := stylePath
+        this.nameSpace := namespace
+        this.rangeXml := rangeXML
+        this.sheetPath := sheetPath
+        this.mainns := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+        
+        ; this.nameSpace  - namespace
+        xml := ComObjCreate("MSXML2.DOMDocument.6.0")
+        xml.async := false
+        xml.Load(stylePath)
+
+        xml.setProperty("SelectionLanguage", "XPath")
+        xml.setProperty("SelectionNamespaces" , this.nameSpace)
+        
+        Err := xml.parseError
+        if Err.reason
+        {
+            msgbox % "Error: " Err.reason . "`n: " . stylePath
+            ExitApp
+        }
+
+        this.xml := xml
+
+        this.cellXfs := xml.DocumentElement.selectSingleNode("//main:cellXfs")
+        this.cellXfsCount := this.cellXfs.getAttribute("count")
+
+        ; numFmtId, fontId, fillId, borderId, xfId
+        cloneNode := xml.DocumentElement.selectSingleNode("//main:cellXfs/main:xf[1]").cloneNode(true)
+        this.CellXf := this.cellXfs.appendChild(cloneNode)
+    }
+    
+    Save()
+    {
+        this.rangeXml.ownerDocument.save(this.sheetPath)
+        this.cellXfs.setAttribute("count", this.cellXfsCount+1)
+        this.xml.save(this.stylePath)
+    }
+
+    ChangeXfAttribute(AttributeName, value)
+    {
+        if value = 0
+        {
+            this.CellXf.removeAttribute("apply" . AttributeName)
+        }
+        else
+        {
+            this.CellXf.setAttribute("apply" . AttributeName, 1)
+            this.rangeXml.setAttribute("s", this.cellXfsCount)
+        }
+        this.CellXf.setAttribute(AttributeName . "Id", value)
+        this.Save()
+    }
+
+    _CreateElement(nodeName)
+    {
+        if nodeName = ""
+            throw, A_ThisFunc . "`nnode name is null."
+        return this.xml.createNode(1, nodeName, this.mainns)
+    }
+
+    ; just for viewing
+    _SetAttribute(node, key, value)
+    {
+        node.setAttribute(key, value)
+        return node
+    }
+
+    ; just for viewing
+    GetAttribute(node)
+    {
+        node.getAttribute(key)
+        return node
+    }
+
+    Fill
+    {
+        set
+        {
+            if value = ""
+            {
+                this.ChangeXfAttribute("fill", 0)
+            }
+            else if value.__class = "FillStyleBuild"
+            {
+                ; rgb set only
+                fills := this.xml.DocumentElement.selectSingleNode("//main:fills")
+                fillsCount := fills.getAttribute("count")
+                
+                fill := this._CreateElement("fill")
+                patternFill := this._CreateElement("patternFill")
+                patternFill.setAttribute("patternType", "solid")
+
+                fgColor := this._CreateElement("fgColor")
+                fgColor.setAttribute("rgb", value.rgb)
+
+                bgColor := this._CreateElement("bgColor")
+                bgColor.setAttribute("indexed", 64)
+
+                patternFill.appendChild(fgColor)
+                patternFill.appendChild(bgColor)
+
+                fill.appendChild(patternFill)
+                fills.appendChild(fill)
+                fills.setAttribute("count", fillsCount + 1)
+
+                fills.ownerDocument.save(this.stylePath)
+
+                this.ChangeXfAttribute("fill", fillsCount)
+            }
+            else
+            {
+                throw, "please use Fill function. for building style"
+            }
+        }
+    }
+
+    Font
+    {
+        set
+        {
+            if value = ""
+            {
+                this.ChangeXfAttribute("font", 0)
+            }
+            else if value.__class = "FontStyleBuild"
+            {
+                ; rgb set only
+                fonts := this.xml.DocumentElement.selectSingleNode("//main:fonts")
+                fontsCount := fonts.getAttribute("count")
+                
+                font := this.xml.DocumentElement.selectSingleNode("//main:font[1]").cloneNode(true)
+                ; font sub nodes below
+                
+                if value.fontSize
+                {
+                    sz := font.selectSingleNode("main:sz")
+                    sz.setAttribute("val", value.fontSize)
+                }
+
+                if value.fontName
+                {
+                    fontName := font.selectSingleNode("main:name")
+                    fontName.setAttribute("val", value.fontName)
+                }
+
+                if value.Bold
+                {
+                    Bold := this._CreateElement("b")
+                    font.appendChild(Bold)
+                }
+
+                if value.strike
+                {
+                    strike := this._CreateElement("strike")
+                    font.appendChild(strike)
+                }
+
+                if value.underline
+                {
+                    underline := this._CreateElement("u")
+                    if value.underline = "double"
+                        underline.setAttribute("val", "double")
+                    font.appendChild(underline)
+                }
+
+                color := font.selectSingleNode("main:color")
+                if value.color
+                {
+                    color.removeAttribute("theme")
+                    color.setAttribute("rgb", value.color)
+                }
+                Else
+                {
+                    if value.color = 0
+                    {
+                        color.removeAttribute("theme")
+                        color.setAttribute("rgb", "000000")
+                    }
+                }
+
+                fonts.appendChild(font)
+                fonts.setAttribute("count", fontsCount + 1)
+
+                fonts.ownerDocument.save(this.stylePath)
+                this.ChangeXfAttribute("font", fontsCount)
+            }
+            else
+            {
+                throw, "please use Font function. for building style"
+            }
+
+        }
+    }
+
+    Border {
+        set
+        {
+            if value = ""
+            {
+                this.ChangeXfAttribute("border", 0)
+            }
+            else if value.__class = "BorderStyleBuild"
+            {
+                borders := this.xml.DocumentElement.selectSingleNode("//main:borders")
+                bordersCount := borders.getAttribute("count")
+                
+                border := this.xml.DocumentElement.selectSingleNode("//main:border[1]").cloneNode(true)
+                value.StyleCheck()
+                if value.left["style"]
+                {
+                    left := border.selectSingleNode("main:left")
+                    left.setAttribute("style", value.left["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.left["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.left["color"])
+                    }
+                    left.appendChild(color)
+                }
+
+                if value.right["style"]
+                {
+                    right := border.selectSingleNode("main:right")
+                    right.setAttribute("style", value.right["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.right["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.right["color"])
+                    }
+                    right.appendChild(color)
+                }
+
+                if value.top["style"]
+                {
+                    top := border.selectSingleNode("main:top")
+                    top.setAttribute("style", value.top["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.top["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.top["color"])
+                    }
+                    top.appendChild(color)
+                }
+
+                if value.bottom["style"]
+                {
+                    bottom := border.selectSingleNode("main:bottom")
+                    bottom.setAttribute("style", value.bottom["style"])
+
+                    color := this._CreateElement("color")
+                    if not value.bottom["color"]
+                    {
+                        color.setAttribute("indexed", 64)
+                    }
+                    else
+                    {
+                        color.setAttribute("rgb", value.bottom["color"])
+                    }
+                    bottom.appendChild(color)
+                }
+
+                borders.appendChild(border)
+                borders.setAttribute("count", bordersCount + 1)
+
+                borders.ownerDocument.save(this.stylePath)
+                this.ChangeXfAttribute("border", bordersCount)
+
+                
+            }
+        }
+    }
+
+   
+}
     
 
+Font()
+{
+    return new FontStyleBuild()
+}
 
+Fill()
+{
+    
+    return new FillStyleBuild()
+}
+
+Border()
+{
+    return new BorderStyleBuild()
+}
+
+class FontStyleBuild
+{
+    __New()
+    {
+        this.fontName := "" ; set default font when assigning.
+        this.fontSize := ""
+        this.color := ""
+        this.family := ""
+        this.underline := "" ; 1. true, 2. "double", 3. ""
+        this.Bold := false
+        this.Italic := false
+        this.Strike := false
+        this.Shadow := false
+        this.Outline := false
+
+        this.sz := this.fontSize
+        this.name := this.fontName
+        this.b := this.Bold
+    }
+}
+
+class BorderStyleBuild
+{
+    __New()
+    {
+        ; style - thin, thick, medium, dotted
+        ; color - indexed=64(black default) or rgb=000000
+        this.availableStyle := "thin|thick|medium|dotted"
+
+        this.left := Array(), this.right := Array()
+        this.top := Array(), this.bottom := Array()
+        
+        this.left["style"] := "", this.right["style"] := ""
+        this.top["style"] := "", this.bottom["style"] := ""
+
+        this.left["color"] := "", this.right["color"] := ""
+        this.top["color"] := "", this.bottom["color"] := ""
+
+    }
+
+    StyleCheck()
+    {   
+        if this.left["style"]
+        {
+            if not InStr(this.availableStyle, this.left["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.left["style"]
+        }
+        
+        if this.right["style"]
+        {
+            if not InStr(this.availableStyle, this.right["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.right["style"]
+        }
+        
+        if this.top["style"]
+        {
+            if not InStr(this.availableStyle, this.top["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.top["style"]
+        }
+
+        if this.bottom["style"]
+        {
+            if not InStr(this.availableStyle, this.bottom["style"])
+                throw, "you pushed invalid "
+                . "Border Style. the style is : " . this.bottom["style"]
+        }
+        
+    }
+}
+
+class FillStyleBuild
+{
+    __New()
+    {
+        ; Set only Solid Type..
+        ; simple color only..
+        this.rgb := ""
+        this.bgCoilorIndexed := 64
+
+    }
+
+    
+
+}
+
+
+/*
+Fill
+    {
+        get {
+            fillId := this.CellXf.getAttribute("fillId")
+            fillXML := this.xml.DocumentElement.selectSingleNode("//main:fill[" . fillId + 1 . "]")
+            patternFill := fillXML.childNodes[0]
+            patternType_ := patternFill.getAttributeNode("patternType")
+            
+            fill := fill()
+
+            fill.patternType := patternType
+            
+            if patternFill.hasChildNodes()
+            {
+                if fgColorRGB := patternFill.childNodes[0].getAttributeNode("rgb")
+                    fill.fgColorRGB_ := fgColorRGB
+
+                if fgColorTheme := patternFill.childNodes[0].getAttributeNode("theme")
+                    fill.fgColorThemes_ := fgColorTheme
+                
+                if fgColortInt := patternFill.childNodes[0].getAttributeNode("tint")
+                    fill.fgColortInts_ := fgColortInt
+
+                if bgcolorIndexed := patternFill.childNodes[1].getAttributeNode("indexed")
+                    fill.bgcolorIndexeds_ := bgcolorIndexed
+            }
+            fill.xml := this.xml
+            return fill
+
+        }
+
+*/
+
+
+/*
+; how to returning node names.
+; for k, v in CellXf.attributes
+; {
+;     ; Msgbox,% k.nodeName
+;     this[k.nodeName] := k.text
+; }
+; Msgbox,% this.fontId.nodeName
+*/
